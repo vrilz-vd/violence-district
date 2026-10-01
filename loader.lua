@@ -1,6 +1,5 @@
 -- ============================================================
 -- VRILZHUB LOADER — VIOLENCE DISTRICT
--- Repo: vrilz-vd/violence-district
 -- ============================================================
 
 local CONFIG = {
@@ -10,7 +9,6 @@ local CONFIG = {
     UI = "ui.lua",
 }
 
--- CEK GAME
 if game.PlaceId ~= CONFIG.GameId then
     warn("[VRILZHUB] Bukan Violence District, abort")
     return
@@ -18,7 +16,6 @@ end
 
 print("[VRILZHUB] Loading Violence District...")
 
--- LOADER FUNCTION
 local function loadScript(url, name)
     local fullURL = CONFIG.BaseURL .. url
     local ok, source = pcall(function()
@@ -42,15 +39,12 @@ local function loadScript(url, name)
     return result
 end
 
--- LOAD FEATURES
 local Features = loadScript(CONFIG.Features, "features")
 if not Features then return end
 
--- LOAD UI
 local UI = loadScript(CONFIG.UI, "ui")
 if not UI then return end
 
--- INIT
 local Shared = {}
 Features.Init(Shared)
 UI.Init(Shared)
