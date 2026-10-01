@@ -1,5 +1,5 @@
 -- ============================================================
--- VRILZHUB UI — VIOLENCE DISTRICT v1.0
+-- VRILZHUB UI — VIOLENCE DISTRICT v1.0 + POINTER
 -- Adapted from Ride a Pet v5.5
 -- ============================================================
 
@@ -13,8 +13,10 @@ local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 
+-- ====== AUTO-DETECT MOBILE ======
 local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
+-- ====== UI CONFIG ======
 local UI_CONFIG = {
     MOBILE = {
         WIN_W_PCT = 0.88, WIN_H_PCT = 0.85,
@@ -102,7 +104,200 @@ local function applyTheme(themeName)
     end
 end
 
--- ====== NOTIFICATION ======
+-- ============================================================
+-- 🖱️ POINTER CURSOR
+-- ============================================================
+local CursorState = {
+    Enabled = true,
+    UnlockMouse = true,
+}
+
+local function setupCursor(parent)
+    local cursorGui = Instance.new("ScreenGui")
+    cursorGui.Name = "VRILZ_Cursor"
+    cursorGui.ResetOnSpawn = false
+    cursorGui.IgnoreGuiInset = true
+    cursorGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    cursorGui.Parent = parent
+
+    local cursorFrame = Instance.new("Frame")
+    cursorFrame.Name = "Cursor"
+    cursorFrame.Size = UDim2.fromOffset(24, 24)
+    cursorFrame.BackgroundTransparency = 1
+    cursorFrame.ZIndex = 99999
+    cursorFrame.Parent = cursorGui
+
+    local arrowOutline = Instance.new("ImageLabel")
+    arrowOutline.Size = UDim2.fromScale(1, 1)
+    arrowOutline.BackgroundTransparency = 1
+    arrowOutline.Image = "rbxassetid://12891167863"
+    arrowOutline.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    arrowOutline.ZIndex = 99999
+    arrowOutline.Parent = cursorFrame
+
+    local arrow = Instance.new("ImageLabel")
+    arrow.Size = UDim2.fromScale(0.75, 0.75)
+    arrow.Position = UDim2.fromScale(0.125, 0.125)
+    arrow.BackgroundTransparency = 1
+    arrow.Image = "rbxassetid://12891167863"
+    arrow.ImageColor3 = Color3.fromRGB(255, 255, 255)
+    arrow.ZIndex = 100000
+    arrow.Parent = cursorFrame
+
+    local trail = Instance.new("Frame")
+    trail.Size = UDim2.fromOffset(8, 8)
+    trail.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+    trail.BackgroundTransparency = 1
+    trail.BorderSizePixel = 0
+    trail.AnchorPoint = Vector2.new(0.5, 0.5)
+    trail.ZIndex = 99998
+    trail.Parent = cursorGui
+
+    local trailCorner = Instance.new("UICorner")
+    trailCorner.CornerRadius = UDim.new(1, 0)
+    trailCorner.Parent = trail
+
+    local lastMouse = Vector2.new(0, 0)
+    local trailAlpha = 0
+
+    RunService.RenderStepped:Connect(function()
+        if CursorState.UnlockMouse then
+            pcall(function()
+                if UserInputService.MouseBehavior ~= Enum.MouseBehavior.Default then
+                    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+                end
+            end)
+        end
+
+        if not CursorState.Enabled then
+            cursorFrame.Visible = false
+            trail.Visible = false
+            return
+        end
+
+        cursorFrame.Visible = true
+
+        local mousePos = UserInputService:GetMouseLocation()
+        cursorFrame.Position = UDim2.fromOffset(mousePos.X, mousePos.Y)
+        trail.Position = UDim2.fromOffset(mousePos.X, mousePos.Y)
+
+        local moved = (mousePos - lastMouse).Magnitude
+        if moved > 3 then
+            trailAlpha = 0.8
+        else
+            trailAlpha = math.max(0, trailAlpha - 0.05)
+        end
+        trail.BackgroundTransparency = 1 - trailAlpha
+        lastMouse = mousePos
+    end)
+
+    -- Control Panel
+    local ctrl = Instance.new("Frame")
+    ctrl.Size = UDim2.fromOffset(180, 120)
+    ctrl.Position = UDim2.new(0, 20, 0, 20)
+    ctrl.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+    ctrl.BorderSizePixel = 0
+    ctrl.Active = true
+    ctrl.Draggable = true
+    ctrl.ZIndex = 99997
+    ctrl.Parent = cursorGui
+
+    local ctrlCorner = Instance.new("UICorner")
+    ctrlCorner.CornerRadius = UDim.new(0, 10)
+    ctrlCorner.Parent = ctrl
+
+    local ctrlStroke = Instance.new("UIStroke")
+    ctrlStroke.Color = Color3.fromRGB(100, 200, 255)
+    ctrlStroke.Thickness = 2
+    ctrlStroke.Parent = ctrl
+
+    local cTitle = Instance.new("TextLabel")
+    cTitle.Size = UDim2.new(1, 0, 0, 24)
+    cTitle.BackgroundColor3 = Color3.fromRGB(15, 25, 40)
+    cTitle.Text = "  🖱️ CURSOR"
+    cTitle.TextColor3 = Color3.fromRGB(100, 200, 255)
+    cTitle.Font = Enum.Font.GothamBold
+    cTitle.TextSize = 10
+    cTitle.TextXAlignment = Enum.TextXAlignment.Left
+    cTitle.BorderSizePixel = 0
+    cTitle.Parent = ctrl
+
+    local cTitleCorner = Instance.new("UICorner")
+    cTitleCorner.CornerRadius = UDim.new(0, 10)
+    cTitleCorner.Parent = cTitle
+
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Size = UDim2.new(1, -20, 0, 26)
+    toggleBtn.Position = UDim2.fromOffset(10, 30)
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
+    toggleBtn.Text = "Cursor: ON"
+    toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+    toggleBtn.Font = Enum.Font.GothamBold
+    toggleBtn.TextSize = 10
+    toggleBtn.BorderSizePixel = 0
+    toggleBtn.Parent = ctrl
+    local tbc = Instance.new("UICorner")
+    tbc.CornerRadius = UDim.new(0, 6)
+    tbc.Parent = toggleBtn
+    toggleBtn.MouseButton1Click:Connect(function()
+        CursorState.Enabled = not CursorState.Enabled
+        if CursorState.Enabled then
+            toggleBtn.Text = "Cursor: ON"
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
+        else
+            toggleBtn.Text = "Cursor: OFF"
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 25)
+        end
+    end)
+
+    local unlockBtn = Instance.new("TextButton")
+    unlockBtn.Size = UDim2.new(1, -20, 0, 26)
+    unlockBtn.Position = UDim2.fromOffset(10, 60)
+    unlockBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
+    unlockBtn.Text = "Unlock: ON"
+    unlockBtn.TextColor3 = Color3.new(1, 1, 1)
+    unlockBtn.Font = Enum.Font.GothamBold
+    unlockBtn.TextSize = 10
+    unlockBtn.BorderSizePixel = 0
+    unlockBtn.Parent = ctrl
+    local ubc = Instance.new("UICorner")
+    ubc.CornerRadius = UDim.new(0, 6)
+    ubc.Parent = unlockBtn
+    unlockBtn.MouseButton1Click:Connect(function()
+        CursorState.UnlockMouse = not CursorState.UnlockMouse
+        if CursorState.UnlockMouse then
+            unlockBtn.Text = "Unlock: ON"
+            unlockBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
+        else
+            unlockBtn.Text = "Unlock: OFF"
+            unlockBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 25)
+            pcall(function()
+                UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+            end)
+        end
+    end)
+
+    local closeCtrlBtn = Instance.new("TextButton")
+    closeCtrlBtn.Size = UDim2.new(1, -20, 0, 22)
+    closeCtrlBtn.Position = UDim2.fromOffset(10, 90)
+    closeCtrlBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 80)
+    closeCtrlBtn.Text = "✕ Close Control"
+    closeCtrlBtn.TextColor3 = Color3.new(1, 1, 1)
+    closeCtrlBtn.Font = Enum.Font.GothamBold
+    closeCtrlBtn.TextSize = 9
+    closeCtrlBtn.BorderSizePixel = 0
+    closeCtrlBtn.Parent = ctrl
+    local cbc = Instance.new("UICorner")
+    cbc.CornerRadius = UDim.new(0, 6)
+    cbc.Parent = closeCtrlBtn
+    closeCtrlBtn.MouseButton1Click:Connect(function()
+        ctrl:Destroy()
+    end)
+end
+
+-- ============================================================
+-- NOTIFICATION
+-- ============================================================
 local NotifHolder = nil
 
 local function setupNotifHolder(parent)
@@ -204,7 +399,9 @@ local function notify(text, type)
     end)
 end
 
--- ====== CARD ======
+-- ============================================================
+-- CARD
+-- ============================================================
 local function makeCard(parent, title, layoutOrder)
     local card = Instance.new("Frame")
     card.Size = UDim2.new(1, 0, 0, 0)
@@ -227,41 +424,6 @@ local function makeCard(parent, title, layoutOrder)
     stroke.Transparency = 0.5
     stroke.Parent = card
     registerTheme(stroke, "Accent", "Color")
-
-    local rippleLayer = Instance.new("Frame")
-    rippleLayer.Name = "RippleLayer"
-    rippleLayer.Size = UDim2.fromScale(1, 1)
-    rippleLayer.BackgroundTransparency = 1
-    rippleLayer.ClipsDescendants = true
-    rippleLayer.ZIndex = 99
-    rippleLayer.Parent = card
-
-    card.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            local ripple = Instance.new("Frame")
-            ripple.Size = UDim2.fromOffset(0, 0)
-            ripple.Position = UDim2.fromOffset(input.Position.X - card.AbsolutePosition.X, input.Position.Y - card.AbsolutePosition.Y)
-            ripple.AnchorPoint = Vector2.new(0.5, 0.5)
-            ripple.BackgroundColor3 = C.Accent
-            ripple.BackgroundTransparency = 0.7
-            ripple.BorderSizePixel = 0
-            ripple.ZIndex = 100
-            ripple.Parent = rippleLayer
-
-            local rippleCorner = Instance.new("UICorner")
-            rippleCorner.CornerRadius = UDim.new(1, 0)
-            rippleCorner.Parent = ripple
-
-            TweenService:Create(ripple, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = UDim2.fromOffset(card.AbsoluteSize.X * 2, card.AbsoluteSize.X * 2),
-                BackgroundTransparency = 1
-            }):Play()
-
-            task.delay(0.7, function()
-                if ripple then ripple:Destroy() end
-            end)
-        end
-    end)
 
     local headerFrame = Instance.new("Frame")
     headerFrame.Size = UDim2.new(1, 0, 0, CFG.CARD_HEADER)
@@ -324,7 +486,9 @@ local function makeCard(parent, title, layoutOrder)
     return card, content
 end
 
--- ====== TOGGLE ======
+-- ============================================================
+-- TOGGLE
+-- ============================================================
 local function makeToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, CFG.TOGGLE_H)
@@ -383,7 +547,9 @@ local function makeToggle(parent, text, default, callback)
     end)
 end
 
--- ====== SLIDER ======
+-- ============================================================
+-- SLIDER
+-- ============================================================
 local function makeSlider(parent, text, minVal, maxVal, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, 44)
@@ -486,7 +652,9 @@ local function makeSlider(parent, text, minVal, maxVal, default, callback)
     return currentValue
 end
 
--- ====== FPS WINDOW ======
+-- ============================================================
+-- FPS WINDOW
+-- ============================================================
 local function buildFPSWindow(parent)
     local fpsWin = Instance.new("Frame")
     fpsWin.Name = "FPSWindow"
@@ -595,7 +763,6 @@ local function buildMainWindow(parent)
     stroke.Parent = main
     registerTheme(stroke, "Accent", "Color")
 
-    -- HEADER
     local header = Instance.new("Frame")
     header.Size = UDim2.new(1, 0, 0, CFG.HEADER_H)
     header.BackgroundColor3 = C.Surface
@@ -694,7 +861,6 @@ local function buildMainWindow(parent)
     closeCorner.CornerRadius = UDim.new(0, 8)
     closeCorner.Parent = closeBtn
 
-    -- BODY
     local body = Instance.new("Frame")
     body.Size = UDim2.new(1, -20, 1, -(CFG.HEADER_H + 20))
     body.Position = UDim2.new(0, 10, 0, CFG.HEADER_H + 10)
@@ -768,44 +934,6 @@ local function buildMainWindow(parent)
     pageHolderPad.PaddingRight = UDim.new(0, IS_MOBILE and 6 or 10)
     pageHolderPad.Parent = pageHolder
 
-    if not IS_MOBILE then
-        local resizeHandle = Instance.new("TextButton")
-        resizeHandle.Size = UDim2.fromOffset(22, 22)
-        resizeHandle.Position = UDim2.new(1, -24, 1, -24)
-        resizeHandle.BackgroundTransparency = 1
-        resizeHandle.Text = "◢"
-        resizeHandle.TextColor3 = C.Accent
-        resizeHandle.TextSize = 14
-        resizeHandle.Font = Enum.Font.GothamBold
-        resizeHandle.AutoButtonColor = false
-        resizeHandle.ZIndex = 100
-        resizeHandle.Parent = main
-        registerTheme(resizeHandle, "Accent", "TextColor3")
-
-        local resizing = false
-        local resizeStart, startSize
-        resizeHandle.InputBegan:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                resizing = true
-                resizeStart = i.Position
-                startSize = main.Size
-            end
-        end)
-        UserInputService.InputChanged:Connect(function(i)
-            if resizing and i.UserInputType == Enum.UserInputType.MouseMovement then
-                local delta = i.Position - resizeStart
-                local newX = math.clamp(startSize.X.Offset + delta.X, 600, 1200)
-                local newY = math.clamp(startSize.Y.Offset + delta.Y, 400, 800)
-                main.Size = UDim2.fromOffset(newX, newY)
-            end
-        end)
-        UserInputService.InputEnded:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                resizing = false
-            end
-        end)
-    end
-
     local openBtn = Instance.new("TextButton")
     openBtn.Size = UDim2.fromOffset(CFG.OPEN_BTN, CFG.OPEN_BTN)
     openBtn.Position = UDim2.fromOffset(20, 20)
@@ -830,26 +958,6 @@ local function buildMainWindow(parent)
     openStroke.Thickness = 2
     openStroke.Transparency = 0.3
     openStroke.Parent = openBtn
-
-    local openDrag, openDS, openSP = false, nil, nil
-    openBtn.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-            openDrag = true
-            openDS = i.Position
-            openSP = openBtn.Position
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(i)
-        if openDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-            local d = i.Position - openDS
-            openBtn.Position = UDim2.new(openSP.X.Scale, openSP.X.Offset + d.X, openSP.Y.Scale, openSP.Y.Offset + d.Y)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-            openDrag = false
-        end
-    end)
 
     openBtn.MouseButton1Click:Connect(function()
         openBtn.Visible = false
@@ -879,7 +987,6 @@ local function buildMainWindow(parent)
         end)
     end)
 
-    -- TAB SYSTEM
     local pages = {}
     local navs = {}
 
@@ -977,9 +1084,7 @@ local function buildMainWindow(parent)
         return page
     end
 
-    -- ============================================================
     -- TAB INFO
-    -- ============================================================
     local infoPage = createPage("Info")
     pages.Info = infoPage
 
@@ -1062,13 +1167,12 @@ local function buildMainWindow(parent)
     end)
 
     local updateCard, updateContent = makeCard(infoPage, "📢 INFORMASI UPDATE", 2)
-
     local infoLines = {
         "Version        : 1.0",
         "Last Update    : 1 Oct 2026",
         "Status         : Online ✅",
-        "Changelog      : ESP Generator, ESP Player",
-        "                 Teleport, Speed, Auto Repair",
+        "Changelog      : ESP, Teleport, Speed",
+        "                 Auto Repair, Cursor",
     }
     for i, line in ipairs(infoLines) do
         local lbl = Instance.new("TextLabel")
@@ -1086,7 +1190,6 @@ local function buildMainWindow(parent)
     end
 
     local explCard, explContent = makeCard(infoPage, "🎮 EXPLOIT SUPPORT", 3)
-
     local explLines = {
         "✅ Delta       ✅ Fluxus",
         "✅ Xeno        ✅ Codex",
@@ -1147,9 +1250,7 @@ local function buildMainWindow(parent)
 
     registerTab("Info", "ℹ", "Info")
 
-    -- ============================================================
     -- TAB GENERATOR
-    -- ============================================================
     local genPage = createPage("Generator")
     pages.Generator = genPage
 
@@ -1234,9 +1335,7 @@ local function buildMainWindow(parent)
 
     registerTab("Generator", "⚡", "Generator")
 
-    -- ============================================================
     -- TAB PLAYER
-    -- ============================================================
     local playerPage = createPage("Player")
     pages.Player = playerPage
 
@@ -1367,9 +1466,7 @@ local function buildMainWindow(parent)
 
     registerTab("Player", "🎯", "Player")
 
-    -- ============================================================
     -- TAB AUTO
-    -- ============================================================
     local autoPage = createPage("Auto")
     pages.Auto = autoPage
 
@@ -1391,9 +1488,7 @@ local function buildMainWindow(parent)
 
     registerTab("Auto", "🔧", "Auto")
 
-    -- ============================================================
     -- TAB SETTINGS
-    -- ============================================================
     local setPage = createPage("Settings")
     pages.Settings = setPage
 
@@ -1445,7 +1540,6 @@ local function buildMainWindow(parent)
     end
 
     local fpsCard, fpsContent = makeCard(setPage, "📊 PERFORMANCE", 2)
-
     local fpsWin = buildFPSWindow(screenGui)
     UI._fpsWindow = fpsWin
 
@@ -1473,7 +1567,6 @@ local function buildMainWindow(parent)
     navs.Info.ic.TextColor3 = Color3.new(1, 1, 1)
     if navs.Info.lbl then navs.Info.lbl.TextColor3 = Color3.new(1, 1, 1) end
 
-    -- DRAG
     local dragging, dragInput, dragStart, startPos
     header.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -1508,7 +1601,7 @@ local function buildMainWindow(parent)
 end
 
 -- ============================================================
--- LOADING SCREEN BRUTAL
+-- LOADING SCREEN
 -- ============================================================
 local function buildLoadingScreen(parent)
     local winW = IS_MOBILE and 280 or 360
@@ -1768,6 +1861,7 @@ function UI.Init(sharedState)
     ScreenGui.Parent = game:GetService("CoreGui")
 
     setupNotifHolder(ScreenGui)
+    setupCursor(ScreenGui)         -- ← POINTER
     buildLoadingScreen(ScreenGui)
 end
 
