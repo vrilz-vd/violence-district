@@ -1,5 +1,6 @@
 -- ============================================================
--- VRILZHUB FEATURES — VIOLENCE DISTRICT
+-- VRILZHUB FEATURES — VIOLENCE DISTRICT v3.0
+-- AUTO-DETECT Generator + Shared State
 -- ============================================================
 
 local Features = {}
@@ -9,9 +10,6 @@ local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
--- ============================================================
--- HELPER
--- ============================================================
 local function getChar() return LocalPlayer.Character end
 local function getHRP()
     local c = getChar()
@@ -48,31 +46,63 @@ function Features.applySpeed()
 end
 
 -- ============================================================
--- LOAD GENERATOR
+-- 🔥 LOAD GENERATOR (AUTO-DETECT)
 -- ============================================================
 function Features.loadGenerators()
     Shared.Generators = {}
+    
+    -- Coba cari di beberapa tempat
     local map = Workspace:FindFirstChild("Map")
-    if not map then return end
-
-    local function addFolder(name)
-        local folder = map:FindFirstChild(name)
-        if not folder then return end
-        for _, gen in ipairs(folder:GetChildren()) do
-            local part = gen:IsA("BasePart") and gen or gen:FindFirstChildWhichIsA("BasePart", true)
-            if part then
-                table.insert(Shared.Generators, {
-                    name = gen.Name,
-                    object = gen,
-                    part = part,
-                    position = part.Position,
-                })
+    local searchPaths = {}
+    
+    if map then
+        table.insert(searchPaths, map:FindFirstChild("Generators"))
+        table.insert(searchPaths, map:FindFirstChild("newGenerators"))
+        table.insert(searchPaths, map:FindFirstChild("generators"))
+    end
+    
+    table.insert(searchPaths, Workspace:FindFirstChild("Generators"))
+    table.insert(searchPaths, Workspace:FindFirstChild("newGenerators"))
+    
+    for _, folder in ipairs(searchPaths) do
+        if folder then
+            for _, gen in ipairs(folder:GetChildren()) do
+                local part = gen:IsA("BasePart") and gen or gen:FindFirstChildWhichIsA("BasePart", true)
+                if part then
+                    table.insert(Shared.Generators, {
+                        name = gen.Name,
+                        object = gen,
+                        part = part,
+                        position = part.Position,
+                    })
+                end
             end
         end
     end
-
-    addFolder("Generators")
-    addFolder("newGenerators")
+    
+    -- FALLBACK: scan semua Workspace
+    if #Shared.Generators == 0 then
+        print("[VRILZ] Fallback scan Workspace...")
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            local name = obj.Name:lower()
+            if name:find("generator") then
+                local part = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart", true)
+                if part then
+                    table.insert(Shared.Generators, {
+                        name = obj.Name,
+                        object = obj,
+                        part = part,
+                        position = part.Position,
+                    })
+                end
+            end
+        end
+    end
+    
+    print("[VRILZ] Total generator: " .. #Shared.Generators)
+    for i, gen in ipairs(Shared.Generators) do
+        print("  #" .. i .. ": " .. gen.name)
+    end
 end
 
 function Features.getGenerators()
@@ -110,22 +140,10 @@ local function createGenESP(genData)
     lbl.BackgroundTransparency = 0.3
     lbl.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     lbl.TextColor3 = Color3.fromRGB(255, 200, 50)
-    lbl.TextStrokeColor3 = Color3.new(0, 0, 0)
-    lbl.TextStrokeTransparency = 0.3
     lbl.Font = Enum.Font.GothamBold
     lbl.TextSize = 10
     lbl.Text = ""
     lbl.Parent = bb
-
-    local cnr = Instance.new("UICorner")
-    cnr.CornerRadius = UDim.new(0, 4)
-    cnr.Parent = lbl
-
-    local str = Instance.new("UIStroke")
-    str.Color = Color3.fromRGB(255, 200, 50)
-    str.Thickness = 1
-    str.Transparency = 0.4
-    str.Parent = lbl
 
     return {hl = hl, bb = bb, lbl = lbl, part = part}
 end
@@ -214,16 +232,6 @@ local function createPlayerESP(player)
     lbl.Text = player.Name
     lbl.Parent = bb
 
-    local cnr = Instance.new("UICorner")
-    cnr.CornerRadius = UDim.new(0, 4)
-    cnr.Parent = lbl
-
-    local str = Instance.new("UIStroke")
-    str.Color = Color3.fromRGB(100, 200, 255)
-    str.Thickness = 1
-    str.Transparency = 0.4
-    str.Parent = lbl
-
     return {hl = hl, bb = bb, lbl = lbl, part = hrp, player = player}
 end
 
@@ -278,10 +286,22 @@ end
 -- ============================================================
 function Features.teleportToGen(index)
     local genData = Shared.Generators[index]
-    if not genData then return false end
+    if not genData then
+        print("[VRILZ] ❌ Generator #" .. index .. " gak ada")
+        return false
+    end
+    
     local hrp = getHRP()
     if not hrp then return false end
-    hrp.CFrame = CFrame.new(genData.position + Vector3.new(0, 3, 0))
+    
+    local part = genData.part
+    if not part or not part.Parent then
+        part = genData.object:FindFirstChildWhichIsA("BasePart", true)
+        if not part then return false end
+    end
+    
+    hrp.CFrame = CFrame.new(part.Position + Vector3.new(0, 3, 0))
+    print("[VRILZ] ✅ TP ke Generator #" .. index .. ": " .. genData.name)
     return true
 end
 
@@ -325,17 +345,20 @@ function Features.startAutoLoops()
                 local hrp = getHRP()
                 if hrp then
                     for _, genData in ipairs(Shared.Generators) do
-                        local dist = (genData.position - hrp.Position).Magnitude
-                        if dist < 10 then
-                            for _, obj in ipairs(genData.object:GetDescendants()) do
-                                if obj:IsA("ProximityPrompt") then
-                                    pcall(function()
-                                        obj.HoldDuration = 0
-                                        fireproximityprompt(obj)
-                                    end)
+                        local part = genData.part
+                        if part and part.Parent then
+                            local dist = (part.Position - hrp.Position).Magnitude
+                            if dist < 10 then
+                                for _, obj in ipairs(genData.object:GetDescendants()) do
+                                    if obj:IsA("ProximityPrompt") then
+                                        pcall(function()
+                                            obj.HoldDuration = 0
+                                            fireproximityprompt(obj)
+                                        end)
+                                    end
                                 end
+                                break
                             end
-                            break
                         end
                     end
                 end
@@ -361,7 +384,7 @@ function Features.Init(sharedState)
     Features.startPlayerESP()
     Features.startAutoLoops()
 
-    print("[VRILZHUB] Violence District Features loaded")
+    print("[VRILZHUB] Violence District Features v3.0 loaded")
 end
 
 return Features
