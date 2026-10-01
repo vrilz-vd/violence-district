@@ -7,23 +7,7 @@ local Shared = nil
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-
--- ============================================================
--- STATE
--- ============================================================
-local State = {
-    Running = true,
-    Generators = {},
-    TrackedESP = {},
-    TrackedPlayerESP = {},
-    SELECTED_GEN_INDEX = 1,
-    SELECTED_PLAYER = nil,
-    NotifiedGens = {},
-}
 
 -- ============================================================
 -- HELPER
@@ -43,9 +27,7 @@ end
 -- ============================================================
 function Features.setSpeed(value)
     local hum = getHum()
-    if hum then
-        hum.WalkSpeed = value
-    end
+    if hum then hum.WalkSpeed = value end
 end
 
 function Features.setJump(value)
@@ -69,7 +51,7 @@ end
 -- LOAD GENERATOR
 -- ============================================================
 function Features.loadGenerators()
-    State.Generators = {}
+    Shared.Generators = {}
     local map = Workspace:FindFirstChild("Map")
     if not map then return end
 
@@ -79,7 +61,7 @@ function Features.loadGenerators()
         for _, gen in ipairs(folder:GetChildren()) do
             local part = gen:IsA("BasePart") and gen or gen:FindFirstChildWhichIsA("BasePart", true)
             if part then
-                table.insert(State.Generators, {
+                table.insert(Shared.Generators, {
                     name = gen.Name,
                     object = gen,
                     part = part,
@@ -94,7 +76,7 @@ function Features.loadGenerators()
 end
 
 function Features.getGenerators()
-    return State.Generators
+    return Shared.Generators
 end
 
 -- ============================================================
@@ -149,28 +131,28 @@ local function createGenESP(genData)
 end
 
 local function removeGenESP(genData)
-    local data = State.TrackedESP[genData]
+    local data = Shared.TrackedESP[genData]
     if not data then return end
     if data.hl then data.hl:Destroy() end
     if data.bb then data.bb:Destroy() end
-    State.TrackedESP[genData] = nil
+    Shared.TrackedESP[genData] = nil
 end
 
 function Features.startGenESP()
     task.spawn(function()
-        while State.Running do
+        while Shared.Running do
             if Shared.ESP_Generators_Enabled then
-                for _, genData in ipairs(State.Generators) do
-                    if not State.TrackedESP[genData] then
+                for _, genData in ipairs(Shared.Generators) do
+                    if not Shared.TrackedESP[genData] then
                         local esp = createGenESP(genData)
                         if esp then
-                            State.TrackedESP[genData] = esp
+                            Shared.TrackedESP[genData] = esp
                         end
                     end
                 end
 
                 local hrp = getHRP()
-                for genData, data in pairs(State.TrackedESP) do
+                for genData, data in pairs(Shared.TrackedESP) do
                     if not genData.object.Parent then
                         removeGenESP(genData)
                     elseif data.lbl and hrp then
@@ -186,7 +168,7 @@ function Features.startGenESP()
                     end
                 end
             else
-                for genData in pairs(State.TrackedESP) do
+                for genData in pairs(Shared.TrackedESP) do
                     removeGenESP(genData)
                 end
             end
@@ -246,30 +228,30 @@ local function createPlayerESP(player)
 end
 
 local function removePlayerESP(player)
-    local data = State.TrackedPlayerESP[player]
+    local data = Shared.TrackedPlayerESP[player]
     if not data then return end
     if data.hl then data.hl:Destroy() end
     if data.bb then data.bb:Destroy() end
-    State.TrackedPlayerESP[player] = nil
+    Shared.TrackedPlayerESP[player] = nil
 end
 
 function Features.startPlayerESP()
     task.spawn(function()
-        while State.Running do
+        while Shared.Running do
             if Shared.ESP_Players_Enabled then
                 for _, player in ipairs(Players:GetPlayers()) do
                     if player ~= LocalPlayer and player.Character then
-                        if not State.TrackedPlayerESP[player] then
+                        if not Shared.TrackedPlayerESP[player] then
                             local esp = createPlayerESP(player)
                             if esp then
-                                State.TrackedPlayerESP[player] = esp
+                                Shared.TrackedPlayerESP[player] = esp
                             end
                         end
                     end
                 end
 
                 local hrp = getHRP()
-                for player, data in pairs(State.TrackedPlayerESP) do
+                for player, data in pairs(Shared.TrackedPlayerESP) do
                     if not player.Character or not player.Character.Parent then
                         removePlayerESP(player)
                     elseif data.lbl and hrp and data.part then
@@ -282,7 +264,7 @@ function Features.startPlayerESP()
                     end
                 end
             else
-                for player in pairs(State.TrackedPlayerESP) do
+                for player in pairs(Shared.TrackedPlayerESP) do
                     removePlayerESP(player)
                 end
             end
@@ -295,7 +277,7 @@ end
 -- TELEPORT
 -- ============================================================
 function Features.teleportToGen(index)
-    local genData = State.Generators[index]
+    local genData = Shared.Generators[index]
     if not genData then return false end
     local hrp = getHRP()
     if not hrp then return false end
@@ -319,33 +301,30 @@ end
 -- AUTO LOOPS
 -- ============================================================
 function Features.startAutoLoops()
-    -- Auto TP Generator
     task.spawn(function()
-        while State.Running do
+        while Shared.Running do
             if Shared.AutoTP_Gen_Enabled then
-                Features.teleportToGen(State.SELECTED_GEN_INDEX)
+                Features.teleportToGen(Shared.SELECTED_GEN_INDEX)
             end
             task.wait(0.5)
         end
     end)
 
-    -- Auto TP Player
     task.spawn(function()
-        while State.Running do
-            if Shared.AutoTP_Player_Enabled and State.SELECTED_PLAYER then
-                Features.teleportToPlayer(State.SELECTED_PLAYER)
+        while Shared.Running do
+            if Shared.AutoTP_Player_Enabled and Shared.SELECTED_PLAYER then
+                Features.teleportToPlayer(Shared.SELECTED_PLAYER)
             end
             task.wait(0.5)
         end
     end)
 
-    -- Auto Repair
     task.spawn(function()
-        while State.Running do
+        while Shared.Running do
             if Shared.AutoRepair_Enabled then
                 local hrp = getHRP()
                 if hrp then
-                    for _, genData in ipairs(State.Generators) do
+                    for _, genData in ipairs(Shared.Generators) do
                         local dist = (genData.position - hrp.Position).Magnitude
                         if dist < 10 then
                             for _, obj in ipairs(genData.object:GetDescendants()) do
@@ -369,8 +348,8 @@ end
 -- ============================================================
 -- INIT
 -- ============================================================
-function Features.Init(shared)
-    Shared = shared
+function Features.Init(sharedState)
+    Shared = sharedState
     Shared.Features = Features
     Shared.setSpeed = Features.setSpeed
     Shared.setJump = Features.setJump
