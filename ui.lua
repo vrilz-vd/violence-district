@@ -1,6 +1,6 @@
 -- ============================================================
 -- VRILZHUB UI — VIOLENCE DISTRICT v2.0
--- FULL FIX: Pointer bisa digerakin bebas
+-- FULL FIX: Cursor bisa digerakin bebas
 -- ============================================================
 
 local UI = {}
@@ -103,17 +103,10 @@ local function applyTheme(themeName)
 end
 
 -- ============================================================
--- 🔥 CURSOR — FULL FIX (BISA DIGERAKIN BEBAS)
+-- 🖱️ CURSOR — BENERAN BISA DIGERAKIN
 -- ============================================================
 local Cursor = {
     Enabled = true,
-    -- Posisi cursor disimpen manual (gak ikut mouse lock)
-    X = 0,
-    Y = 0,
-    -- Speed gerak cursor
-    Sensitivity = 8,
-    -- Inisialisasi
-    Init = false,
 }
 
 local function setupCursor(parent)
@@ -124,145 +117,54 @@ local function setupCursor(parent)
     cursorGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     cursorGui.Parent = parent
 
-    -- Cursor frame
-    local cursorFrame = Instance.new("Frame")
-    cursorFrame.Size = UDim2.fromOffset(28, 28)
-    cursorFrame.BackgroundTransparency = 1
-    cursorFrame.ZIndex = 99999
-    cursorFrame.Parent = cursorGui
+    -- 🔥 UNLOCK MOUSE
+    local function unlockMouse()
+        pcall(function()
+            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+            UserInputService.MouseIconEnabled = true
+        end)
+    end
 
-    -- Outline (hitam)
-    local outline = Instance.new("ImageLabel")
-    outline.Size = UDim2.fromScale(1, 1)
-    outline.BackgroundTransparency = 1
-    outline.Image = "rbxassetid://12891167863"
-    outline.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    outline.ZIndex = 99999
-    outline.Parent = cursorFrame
+    local function lockMouse()
+        pcall(function()
+            UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+            UserInputService.MouseIconEnabled = false
+        end)
+    end
 
-    -- Panah (putih)
-    local arrow = Instance.new("ImageLabel")
-    arrow.Size = UDim2.fromScale(0.7, 0.7)
-    arrow.Position = UDim2.fromScale(0.15, 0.15)
-    arrow.BackgroundTransparency = 1
-    arrow.Image = "rbxassetid://12891167863"
-    arrow.ImageColor3 = Color3.fromRGB(255, 255, 255)
-    arrow.ZIndex = 100000
-    arrow.Parent = cursorFrame
+    unlockMouse()
 
-    -- Trail
-    local trail = Instance.new("Frame")
-    trail.Size = UDim2.fromOffset(8, 8)
-    trail.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-    trail.BackgroundTransparency = 0.8
-    trail.BorderSizePixel = 0
-    trail.AnchorPoint = Vector2.new(0.5, 0.5)
-    trail.ZIndex = 99998
-    trail.Parent = cursorGui
-
-    local trailCorner = Instance.new("UICorner")
-    trailCorner.CornerRadius = UDim.new(1, 0)
-    trailCorner.Parent = trail
-
-    -- Posisi awal tengah layar
-    local viewport = workspace.CurrentCamera.ViewportSize
-    Cursor.X = viewport.X / 2
-    Cursor.Y = viewport.Y / 2
-
-    -- ============================================================
-    -- 🔥 UPDATE CURSOR (BISA GERAK BEBAS KANAN-KIRI-ATAS-BAWAH)
-    -- ============================================================
-    RunService.RenderStepped:Connect(function(dt)
-        if not Cursor.Enabled then
-            cursorFrame.Visible = false
-            trail.Visible = false
-            return
-        end
-
-        cursorFrame.Visible = true
-        trail.Visible = true
-
-        -- Ambil delta mouse (pergerakan real mouse)
-        local mouseDelta = UserInputService:GetMouseDelta()
-
-        -- Update posisi cursor (pakai delta, bukan posisi absolute)
-        Cursor.X = Cursor.X + mouseDelta.X * Cursor.Sensitivity
-        Cursor.Y = Cursor.Y + mouseDelta.Y * Cursor.Sensitivity
-
-        -- Clamp ke viewport (biar gak keluar layar)
-        local vp = workspace.CurrentCamera.ViewportSize
-        Cursor.X = math.clamp(Cursor.X, 0, vp.X)
-        Cursor.Y = math.clamp(Cursor.Y, 0, vp.Y)
-
-        -- Update posisi cursor
-        cursorFrame.Position = UDim2.fromOffset(Cursor.X, Cursor.Y)
-        trail.Position = UDim2.fromOffset(Cursor.X, Cursor.Y)
-
-        -- Trail alpha
-        local moved = math.sqrt(mouseDelta.X^2 + mouseDelta.Y^2)
-        if moved > 1 then
-            trail.BackgroundTransparency = 0.3
-        else
-            trail.BackgroundTransparency = math.min(1, trail.BackgroundTransparency + 0.05)
-        end
-    end)
-
-    -- ============================================================
-    -- 🔥 LOCK MOUSE KE CENTER (BIAR DELTA MAKSIMAL)
-    -- ============================================================
-    task.spawn(function()
-        while true do
-            task.wait(0.1)
-            if Cursor.Enabled then
-                pcall(function()
-                    UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-                    UserInputService.MouseIconEnabled = false
-                end)
-            else
-                pcall(function()
+    -- 🔥 RE-UNLOCK TIAP FRAME (KUNCI!)
+    RunService.RenderStepped:Connect(function()
+        if Cursor.Enabled then
+            pcall(function()
+                if UserInputService.MouseBehavior ~= Enum.MouseBehavior.Default then
                     UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+                end
+                if not UserInputService.MouseIconEnabled then
                     UserInputService.MouseIconEnabled = true
-                end)
-            end
+                end
+            end)
         end
     end)
 
-    -- ============================================================
-    -- 🔥 KEY BINDING — Toggle Cursor + Unlock
-    -- ============================================================
+    -- F1 = Toggle
     UserInputService.InputBegan:Connect(function(input, gameProcessed)
         if gameProcessed then return end
-
-        -- F1 = Toggle Cursor ON/OFF
         if input.KeyCode == Enum.KeyCode.F1 then
             Cursor.Enabled = not Cursor.Enabled
             if Cursor.Enabled then
-                print("[VRILZ] Cursor: ON")
+                unlockMouse()
             else
-                print("[VRILZ] Cursor: OFF")
+                lockMouse()
             end
-        end
-
-        -- F2 = Unlock Mouse (biar bisa klik UI)
-        if input.KeyCode == Enum.KeyCode.F2 then
-            pcall(function()
-                UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-                UserInputService.MouseIconEnabled = true
-            end)
-            task.wait(0.3)
-            pcall(function()
-                UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-                UserInputService.MouseIconEnabled = false
-            end)
         end
     end)
 
-    -- ============================================================
-    -- UI CONTROL PANEL
-    -- ============================================================
+    -- Control Panel
     local ctrl = Instance.new("Frame")
-    ctrl.Size = UDim2.fromOffset(200, 150)
-    ctrl.Position = UDim2.new(0, 20, 0, 20)
+    ctrl.Size = UDim2.fromOffset(220, 130)
+    ctrl.Position = UDim2.new(0, 20, 0.5, -65)
     ctrl.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     ctrl.BorderSizePixel = 0
     ctrl.Active = true
@@ -280,12 +182,12 @@ local function setupCursor(parent)
     cs.Parent = ctrl
 
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 24)
+    title.Size = UDim2.new(1, 0, 0, 26)
     title.BackgroundColor3 = Color3.fromRGB(15, 25, 40)
     title.Text = "  🖱️ CURSOR CONTROL"
     title.TextColor3 = Color3.fromRGB(100, 200, 255)
     title.Font = Enum.Font.GothamBold
-    title.TextSize = 10
+    title.TextSize = 11
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.BorderSizePixel = 0
     title.Parent = ctrl
@@ -295,117 +197,54 @@ local function setupCursor(parent)
     tc.Parent = title
 
     local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.fromOffset(20, 20)
-    closeBtn.Position = UDim2.new(1, -24, 0, 2)
+    closeBtn.Size = UDim2.fromOffset(22, 22)
+    closeBtn.Position = UDim2.new(1, -26, 0, 2)
     closeBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 80)
     closeBtn.Text = "×"
     closeBtn.TextColor3 = Color3.new(1, 1, 1)
     closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 12
+    closeBtn.TextSize = 14
     closeBtn.BorderSizePixel = 0
     closeBtn.Parent = ctrl
 
     local cbc = Instance.new("UICorner")
-    cbc.CornerRadius = UDim.new(0, 5)
+    cbc.CornerRadius = UDim.new(0, 6)
     cbc.Parent = closeBtn
 
     closeBtn.MouseButton1Click:Connect(function()
         ctrl:Destroy()
     end)
 
-    -- Info
-    local info = Instance.new("TextLabel")
-    info.Size = UDim2.new(1, -20, 0, 14)
-    info.Position = UDim2.fromOffset(10, 28)
-    info.BackgroundTransparency = 1
-    info.Text = "F1 = Toggle Cursor"
-    info.TextColor3 = Color3.fromRGB(150, 200, 240)
-    info.Font = Enum.Font.GothamSemibold
-    info.TextSize = 9
-    info.TextXAlignment = Enum.TextXAlignment.Left
-    info.Parent = ctrl
+    local statusLbl = Instance.new("TextLabel")
+    statusLbl.Size = UDim2.new(1, -20, 0, 16)
+    statusLbl.Position = UDim2.fromOffset(10, 32)
+    statusLbl.BackgroundTransparency = 1
+    statusLbl.Text = "Cursor: ON (mouse gerak bebas)"
+    statusLbl.TextColor3 = Color3.fromRGB(150, 255, 150)
+    statusLbl.Font = Enum.Font.GothamBold
+    statusLbl.TextSize = 10
+    statusLbl.TextXAlignment = Enum.TextXAlignment.Left
+    statusLbl.Parent = ctrl
 
-    local info2 = Instance.new("TextLabel")
-    info2.Size = UDim2.new(1, -20, 0, 14)
-    info2.Position = UDim2.fromOffset(10, 44)
-    info2.BackgroundTransparency = 1
-    info2.Text = "F2 = Unlock sementara"
-    info2.TextColor3 = Color3.fromRGB(150, 200, 240)
-    info2.Font = Enum.Font.GothamSemibold
-    info2.TextSize = 9
-    info2.TextXAlignment = Enum.TextXAlignment.Left
-    info2.Parent = ctrl
+    local infoLbl = Instance.new("TextLabel")
+    infoLbl.Size = UDim2.new(1, -20, 0, 14)
+    infoLbl.Position = UDim2.fromOffset(10, 50)
+    infoLbl.BackgroundTransparency = 1
+    infoLbl.Text = "F1 = Toggle Cursor"
+    infoLbl.TextColor3 = Color3.fromRGB(180, 200, 240)
+    infoLbl.Font = Enum.Font.GothamSemibold
+    infoLbl.TextSize = 9
+    infoLbl.TextXAlignment = Enum.TextXAlignment.Left
+    infoLbl.Parent = ctrl
 
-    -- Sensitivity slider
-    local sensLbl = Instance.new("TextLabel")
-    sensLbl.Size = UDim2.new(1, -20, 0, 14)
-    sensLbl.Position = UDim2.fromOffset(10, 62)
-    sensLbl.BackgroundTransparency = 1
-    sensLbl.Text = "Sensitivity: " .. Cursor.Sensitivity
-    sensLbl.TextColor3 = Color3.fromRGB(200, 220, 255)
-    sensLbl.Font = Enum.Font.GothamBold
-    sensLbl.TextSize = 9
-    sensLbl.TextXAlignment = Enum.TextXAlignment.Left
-    sensLbl.Parent = ctrl
-
-    local sensBg = Instance.new("Frame")
-    sensBg.Size = UDim2.new(1, -20, 0, 6)
-    sensBg.Position = UDim2.fromOffset(10, 80)
-    sensBg.BackgroundColor3 = Color3.fromRGB(35, 42, 55)
-    sensBg.BorderSizePixel = 0
-    sensBg.Parent = ctrl
-
-    local sbc = Instance.new("UICorner")
-    sbc.CornerRadius = UDim.new(1, 0)
-    sbc.Parent = sensBg
-
-    local sensFill = Instance.new("Frame")
-    sensFill.Size = UDim2.new(Cursor.Sensitivity / 20, 0, 1, 0)
-    sensFill.BackgroundColor3 = Color3.fromRGB(100, 200, 255)
-    sensFill.BorderSizePixel = 0
-    sensFill.Parent = sensBg
-
-    local sfc = Instance.new("UICorner")
-    sfc.CornerRadius = UDim.new(1, 0)
-    sfc.Parent = sensFill
-
-    local sensBtn = Instance.new("TextButton")
-    sensBtn.Size = UDim2.new(1, 0, 1, 20)
-    sensBtn.Position = UDim2.new(0, 0, 0.5, -10)
-    sensBtn.BackgroundTransparency = 1
-    sensBtn.Text = ""
-    sensBtn.Parent = sensBg
-
-    local draggingSens = false
-    sensBtn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            draggingSens = true
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            draggingSens = false
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if draggingSens and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local mouseX = UserInputService:GetMouseLocation().X
-            local rel = math.clamp((mouseX - sensBg.AbsolutePosition.X) / sensBg.AbsoluteSize.X, 0, 1)
-            Cursor.Sensitivity = 1 + math.floor(rel * 19) -- 1-20
-            sensFill.Size = UDim2.new(rel, 0, 1, 0)
-            sensLbl.Text = "Sensitivity: " .. Cursor.Sensitivity
-        end
-    end)
-
-    -- Toggle button
     local toggleBtn = Instance.new("TextButton")
-    toggleBtn.Size = UDim2.new(1, -20, 0, 28)
-    toggleBtn.Position = UDim2.fromOffset(10, 94)
+    toggleBtn.Size = UDim2.new(1, -20, 0, 30)
+    toggleBtn.Position = UDim2.fromOffset(10, 68)
     toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
     toggleBtn.Text = "Cursor: ON"
     toggleBtn.TextColor3 = Color3.new(1, 1, 1)
     toggleBtn.Font = Enum.Font.GothamBold
-    toggleBtn.TextSize = 10
+    toggleBtn.TextSize = 11
     toggleBtn.BorderSizePixel = 0
     toggleBtn.Parent = ctrl
 
@@ -416,35 +255,30 @@ local function setupCursor(parent)
     toggleBtn.MouseButton1Click:Connect(function()
         Cursor.Enabled = not Cursor.Enabled
         if Cursor.Enabled then
+            unlockMouse()
             toggleBtn.Text = "Cursor: ON"
             toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
+            statusLbl.Text = "Cursor: ON (mouse gerak bebas)"
+            statusLbl.TextColor3 = Color3.fromRGB(150, 255, 150)
         else
+            lockMouse()
             toggleBtn.Text = "Cursor: OFF"
             toggleBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 25)
+            statusLbl.Text = "Cursor: OFF (kamera gerak)"
+            statusLbl.TextColor3 = Color3.fromRGB(255, 150, 150)
         end
     end)
 
-    -- Reset button
-    local resetBtn = Instance.new("TextButton")
-    resetBtn.Size = UDim2.new(1, -20, 0, 20)
-    resetBtn.Position = UDim2.fromOffset(10, 126)
-    resetBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 50)
-    resetBtn.Text = "Reset Posisi Cursor"
-    resetBtn.TextColor3 = Color3.new(1, 1, 1)
-    resetBtn.Font = Enum.Font.GothamBold
-    resetBtn.TextSize = 9
-    resetBtn.BorderSizePixel = 0
-    resetBtn.Parent = ctrl
-
-    local rbc = Instance.new("UICorner")
-    rbc.CornerRadius = UDim.new(0, 6)
-    rbc.Parent = resetBtn
-
-    resetBtn.MouseButton1Click:Connect(function()
-        local vp = workspace.CurrentCamera.ViewportSize
-        Cursor.X = vp.X / 2
-        Cursor.Y = vp.Y / 2
-    end)
+    local infoBottom = Instance.new("TextLabel")
+    infoBottom.Size = UDim2.new(1, -20, 0, 14)
+    infoBottom.Position = UDim2.fromOffset(10, 102)
+    infoBottom.BackgroundTransparency = 1
+    infoBottom.Text = "Kamera gerak = Cursor OFF"
+    infoBottom.TextColor3 = Color3.fromRGB(255, 180, 100)
+    infoBottom.Font = Enum.Font.GothamBold
+    infoBottom.TextSize = 9
+    infoBottom.TextXAlignment = Enum.TextXAlignment.Left
+    infoBottom.Parent = ctrl
 end
 
 -- ============================================================
@@ -1163,7 +997,7 @@ local function buildMainWindow(parent)
         return page
     end
 
-    -- TAB INFO
+    -- INFO TAB
     local infoPage = createPage("Info")
     pages.Info = infoPage
 
@@ -1270,7 +1104,7 @@ local function buildMainWindow(parent)
 
     registerTab("Info", "ℹ", "Info")
 
-    -- TAB GENERATOR
+    -- GENERATOR TAB
     local genPage = createPage("Generator")
     pages.Generator = genPage
 
@@ -1290,7 +1124,7 @@ local function buildMainWindow(parent)
 
     local genGrid = Instance.new("UIGridLayout")
     genGrid.CellSize = UDim2.new(0.32, -4, 0, 30)
-    genGrid.CellPadding = UDim2.new(0, 4, 0, 4)
+    genGrid.CellPadding = UDim.new(0, 4, 0, 4)
     genGrid.SortOrder = Enum.SortOrder.LayoutOrder
     genGrid.Parent = genBtnHolder
 
@@ -1355,7 +1189,7 @@ local function buildMainWindow(parent)
 
     registerTab("Generator", "⚡", "Generator")
 
-    -- TAB AUTO
+    -- AUTO TAB
     local autoPage = createPage("Auto")
     pages.Auto = autoPage
 
@@ -1374,7 +1208,7 @@ local function buildMainWindow(parent)
 
     registerTab("Auto", "🔧", "Auto")
 
-    -- TAB SETTINGS
+    -- SETTINGS TAB
     local setPage = createPage("Settings")
     pages.Settings = setPage
 
@@ -1457,12 +1291,6 @@ local function buildLoadingScreen(parent)
     stroke1.Thickness = 3
     stroke1.Parent = loading
 
-    local stroke2 = Instance.new("UIStroke")
-    stroke2.Color = Color3.fromRGB(255, 255, 255)
-    stroke2.Thickness = 1
-    stroke2.Transparency = 0.7
-    stroke2.Parent = loading
-
     local vHolder = Instance.new("Frame")
     vHolder.Size = UDim2.fromScale(1, 0.55)
     vHolder.Position = UDim2.fromScale(0, 0.15)
@@ -1519,18 +1347,6 @@ local function buildLoadingScreen(parent)
     percentLbl.ZIndex = 306
     percentLbl.Parent = loading
 
-    local brandLbl = Instance.new("TextLabel")
-    brandLbl.Size = UDim2.new(1, -20, 0, 14)
-    brandLbl.Position = UDim2.new(0, 10, 0, winH - 26)
-    brandLbl.BackgroundTransparency = 1
-    brandLbl.Text = "V R I L Z H U B"
-    brandLbl.TextColor3 = Color3.fromRGB(150, 80, 100)
-    brandLbl.Font = Enum.Font.GothamBold
-    brandLbl.TextSize = 10
-    brandLbl.TextXAlignment = Enum.TextXAlignment.Left
-    brandLbl.ZIndex = 306
-    brandLbl.Parent = loading
-
     task.spawn(function()
         local startSize = 1
         local endSize = IS_MOBILE and 130 or 170
@@ -1552,7 +1368,6 @@ local function buildLoadingScreen(parent)
         }):Play()
         task.wait(0.6)
 
-        loadingText.Text = "INITIALIZING..."
         for i = 1, 30 do
             task.wait(0.05)
             local p = (i / 30) * 0.15
@@ -1582,7 +1397,6 @@ local function buildLoadingScreen(parent)
 
         loadingText.Text = "READY!"
         percentLbl.Text = "100%"
-
         task.wait(0.4)
 
         TweenService:Create(loading, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
@@ -1618,7 +1432,7 @@ function UI.Init(sharedState)
     ScreenGui.Parent = game:GetService("CoreGui")
 
     setupNotifHolder(ScreenGui)
-    setupCursor(ScreenGui)         -- ← CURSOR
+    setupCursor(ScreenGui)
     buildLoadingScreen(ScreenGui)
 end
 
