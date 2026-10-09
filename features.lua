@@ -1,5 +1,5 @@
 --=============================================================
--- VRILZHUB FEATURES - ANIME DICE v3 (FULL FIX)
+-- VRILZHUB FEATURES - ANIME DICE v4 (FAST ROLL)
 --=============================================================
 
 local Players = game:GetService("Players")
@@ -15,7 +15,7 @@ end
 
 print("[Features] Network found")
 
---========== GET REMOTE (SAFE) ==========
+--========== GET REMOTE ==========
 local function getRemote(path)
     if not path or path == "" then return nil end
     local cur = RS
@@ -27,20 +27,14 @@ local function getRemote(path)
     return cur
 end
 
---========== AMBIL REMOTE ==========
 local Remotes = {
-    -- Roll
     SetAutoRoll   = getRemote("Network.RollService.RE.SetAutoRoll"),
     RollDice      = getRemote("Network.RollService.RF.RollDice"),
-    -- Sell
+    RollMessage   = getRemote("Network.RollService.RE.RollMessage"),
     SellInventory = getRemote("Network.SellService.RF.SellInventory"),
     SellEquipped  = getRemote("Network.SellService.RF.SellEquipped"),
     UpdateAutoSell= getRemote("Network.SellService.RE.UpdateAutoSell"),
-    -- Unit
     EquipBest     = getRemote("Network.PlotService.RE.EquipBest"),
-    Equip         = getRemote("Network.UnitService.RF.Equip"),
-    Unequip       = getRemote("Network.UnitService.RF.Unequip"),
-    -- Claim
     DailyClaim    = getRemote("Network.DailyRewardService.RE.Claim"),
     QuestClaim    = getRemote("Network.QuestService.RE.Claim"),
     OfflineClaim  = getRemote("Network.OfflineEarningsService.RE.Claim"),
@@ -58,7 +52,6 @@ local Zones = workspace:FindFirstChild("Zones")
 if Zones then
     SellingZone = Zones:FindFirstChild("Selling")
 end
-print("[Features] SellingZone: " .. (SellingZone and "OK" or "FAIL"))
 
 --========== UTIL ==========
 local function fire(remote, ...)
@@ -72,18 +65,6 @@ local function fire(remote, ...)
     return true
 end
 
-local function invoke(remote, ...)
-    if not remote then return nil end
-    local args = {...}
-    local result
-    task.spawn(function()
-        pcall(function()
-            result = remote:InvokeServer(table.unpack(args))
-        end)
-    end)
-    return result
-end
-
 local function getHum()
     local c = LP.Character
     return c and c:FindFirstChildOfClass("Humanoid")
@@ -94,28 +75,21 @@ local function getRoot()
     return c and c:FindFirstChild("HumanoidRootPart")
 end
 
---========== RARITY → CHANCE MAPPING ==========
+--========== RARITY CHANCE MAPPING ==========
 local RARITY_CHANCE = {
-    Common = 10,
-    Uncommon = 100,
-    Rare = 1000,
-    Epic = 10000,
-    Legendary = 100000,
-    Mythical = 1000000,
-    Divine = 10000000,
-    Celestial = 100000000,
-    Exotic = 1000000000,
-    ["Secret I"] = 10000000000,
-    ["Secret II"] = 100000000000,
+    Common = 10, Uncommon = 100, Rare = 1000, Epic = 10000,
+    Legendary = 100000, Mythical = 1000000, Divine = 10000000,
+    Celestial = 100000000, Exotic = 1000000000,
+    ["Secret I"] = 10000000000, ["Secret II"] = 100000000000,
     Exclusive = 999999999999999,
 }
 
---========== SHARED STATE ==========
+--========== SHARED ==========
 local function S()
     return _G.VRILZ_UI_Shared or {}
 end
 
---========== HITUNG THRESHOLD DARI KEEP RARITY ==========
+--========== HITUNG THRESHOLD ==========
 local function calculateThreshold()
     local keep = S().KeepRarity or {}
     local lowest = nil
@@ -127,39 +101,58 @@ local function calculateThreshold()
             end
         end
     end
-    if not lowest then
-        return 999999999999999
-    end
+    if not lowest then return 999999999999999 end
     return math.floor(lowest / 2)
 end
 
 --========== FEATURES ==========
 local Features = {}
 
---========== AUTO ROLL (SERVER-SIDE - STABIL) ==========
-task.spawn(function()
-    local lastState = nil
-    while task.wait(1) do
-        local state = S().AutoRoll_Enabled
-        if state ~= nil and state ~= lastState then
-            lastState = state
-            if Remotes.SetAutoRoll then
-                fire(Remotes.SetAutoRoll, state)
-                print("[Features] SetAutoRoll: " .. tostring(state))
+--========== AUTO ROLL: LISTEN ROLL MESSAGE ==========
+-- Ini yang bikin kita dapet hasil roll tanpa nunggu animasi
+if Remotes.RollMessage then
+    Remotes.RollMessage.OnClientEvent:Connect(function(data)
+        if type(data) == "table" and data.message then
+            local msg = data.message
+            -- extract unit name dari message
+            -- contoh: "zcfdb1234 has rolled a <b>Diamond Meliadus</b> with a <b>1 in 14sx</b> chance!"
+            local unitName = msg:match("<b>(.-)</b>") -- ambil unit pertama
+            local chance = msg:match("<b>(.-)</b>%s*chance") -- ambil chance
+            if chance == unitName then chance = nil end
+            
+            print("[ROLL RESULT] " .. tostring(unitName) .. " | " .. tostring(chance))
+            
+            -- simpan ke shared state (buat UI log)
+            if Shared then
+                Shared.LastRoll = unitName
+                Shared.LastRollChance = chance
+                if Shared.RollLog then
+                    table.insert(Shared.RollLog, 1, {unit = unitName, chance = chance})
+                    if #Shared.RollLog > 50 then
+                        table.remove(Shared.RollLog, 51)
+                    end
+                end
             end
         end
-    end
-end)
+    end)
+    print("[Features] RollMessage listener active")
+end
 
---========== AUTO ROLL CLIENT (OPSIONAL - LEBIH CEPET) ==========
--- Bisa di-disable kalo server rate-limit. Set S().FastRoll_Enabled = true buat aktif.
+--========== AUTO ROLL (FAST - SKIP ANIMASI) ==========
+-- Pakai RollDice:InvokeServer() di dalam task.spawn
+-- biar ga nunggu return (return-nya nil, cuma trigger)
 task.spawn(function()
     while true do
-        local delay = S().RollDelay or 0.3
+        local delay = S().RollDelay or 0.15
         task.wait(delay)
         
-        if S().FastRoll_Enabled and S().AutoRoll_Enabled and Remotes.RollDice then
-            invoke(Remotes.RollDice)
+        if S().AutoRoll_Enabled and Remotes.RollDice then
+            -- FIRE-AND-FORGET: task.spawn biar ga block
+            task.spawn(function()
+                pcall(function()
+                    Remotes.RollDice:InvokeServer()
+                end)
+            end)
         end
     end
 end)
@@ -184,7 +177,6 @@ task.spawn(function()
             fire(Remotes.OfflineClaim)
             task.wait(3)
             fire(Remotes.GroupClaim)
-            print("[Features] Auto Claim done")
         end
     end
 end)
@@ -203,7 +195,7 @@ task.spawn(function()
     end
 end)
 
---========== AUTO SELL BY RARITY (THRESHOLD) ==========
+--========== AUTO SELL BY RARITY ==========
 task.spawn(function()
     while task.wait(15) do
         if S().AutoSell_Enabled and Remotes.UpdateAutoSell then
@@ -218,10 +210,9 @@ end)
 Features.Remotes = Remotes
 Features.SellingZone = SellingZone
 Features.fire = fire
-Features.invoke = invoke
 Features.getHum = getHum
 Features.getRoot = getRoot
 Features.getThreshold = calculateThreshold
 
 _G.VRILZ_Features = Features
-print("[Features] Anime Dice features loaded v3")
+print("[Features] Anime Dice features loaded v4 (FAST ROLL)")
