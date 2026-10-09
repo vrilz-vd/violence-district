@@ -13,8 +13,6 @@ if not Network then
     return
 end
 
-print("[Features] Network found")
-
 --========== GET REMOTE ==========
 local function getRemote(path)
     if not path or path == "" then return nil end
@@ -40,11 +38,6 @@ local Remotes = {
     OfflineClaim  = getRemote("Network.OfflineEarningsService.RE.Claim"),
     GroupClaim    = getRemote("Network.GroupRewardService.RE.Claim"),
 }
-
-print("[Features] Remote status:")
-for name, remote in pairs(Remotes) do
-    print(string.format("  %-15s : %s", name, remote and "OK" or "FAIL"))
-end
 
 --========== ZONA SELLING ==========
 local SellingZone = nil
@@ -114,28 +107,17 @@ if Remotes.RollMessage then
     Remotes.RollMessage.OnClientEvent:Connect(function(data)
         if type(data) == "table" and data.message then
             local msg = data.message
-            -- extract unit name dari message
-            -- contoh: "zcfdb1234 has rolled a <b>Diamond Meliadus</b> with a <b>1 in 14sx</b> chance!"
-            local unitName = msg:match("<b>(.-)</b>") -- ambil unit pertama
-            local chance = msg:match("<b>(.-)</b>%s*chance") -- ambil chance
+            local unitName = msg:match("<b>(.-)</b>")
+            local chance = msg:match("<b>(.-)</b>%s*chance")
             if chance == unitName then chance = nil end
             
-            print("[ROLL RESULT] " .. tostring(unitName) .. " | " .. tostring(chance))
-            
-            -- simpan ke shared state (buat UI log)
-            if Shared then
-                Shared.LastRoll = unitName
-                Shared.LastRollChance = chance
-                if Shared.RollLog then
-                    table.insert(Shared.RollLog, 1, {unit = unitName, chance = chance})
-                    if #Shared.RollLog > 50 then
-                        table.remove(Shared.RollLog, 51)
-                    end
-                end
+            local shared = S()
+            if shared and next(shared) then
+                shared.LastRoll = unitName
+                shared.LastRollChance = chance
             end
         end
     end)
-    print("[Features] RollMessage listener active")
 end
 
 --========== AUTO ROLL (FAST - SKIP ANIMASI) ==========
@@ -201,7 +183,6 @@ task.spawn(function()
         if S().AutoSell_Enabled and Remotes.UpdateAutoSell then
             local threshold = calculateThreshold()
             fire(Remotes.UpdateAutoSell, threshold)
-            print("[Features] AutoSell threshold: 1 in " .. threshold)
         end
     end
 end)
@@ -215,4 +196,19 @@ Features.getRoot = getRoot
 Features.getThreshold = calculateThreshold
 
 _G.VRILZ_Features = Features
-print("[Features] Anime Dice features loaded v4 (FAST ROLL)")
+-- print("[Features] Network found")  ← hapus
+
+-- Remote status → cuma warn kalau ada yang FAIL
+local failCount = 0
+for name, remote in pairs(Remotes) do
+    if not remote then
+        failCount = failCount + 1
+        warn("[Features] Remote FAIL: " .. name)
+    end
+end
+if failCount == 0 then
+    print("[Features] ✓ All remotes OK")
+end
+
+-- print("[Features] RollMessage listener active")  ← hapus
+-- print("[Features] Anime Dice features loaded v4")  ← hapus
