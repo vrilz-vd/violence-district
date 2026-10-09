@@ -2209,6 +2209,47 @@ local function buildMainWindow(parent)
 
     registerTab("Info", "i", "Info")
 
+    -- ================= TAB AUTO =================
+    local autoPage = createPage("Auto")
+    pages.Auto = autoPage
+
+    -- CARD: AUTO ROLL
+    local rollCard, rollContent = makeCard(autoPage, "AUTO ROLL", 1)
+
+    makeToggle(rollContent, "Auto Roll", false, function(v)
+        Shared.AutoRoll_Enabled = v
+        if v then notify("Auto Roll: ON", "success")
+        else notify("Auto Roll: OFF", "info") end
+    end)
+
+    makeToggle(rollContent, "Auto Equip Best", false, function(v)
+        Shared.AutoEquipBest_Enabled = v
+        if v then notify("Auto Equip Best: ON", "success")
+        else notify("Auto Equip Best: OFF", "info") end
+    end)
+
+    -- CARD: AUTO CLAIM
+    local claimCard, claimContent = makeCard(autoPage, "AUTO CLAIM", 2)
+
+    makeToggle(claimContent, "Auto Claim (Daily/Quest/Offline)", false, function(v)
+        Shared.AutoClaim_Enabled = v
+        if v then notify("Auto Claim: ON", "success")
+        else notify("Auto Claim: OFF", "info") end
+    end)
+
+    -- CARD: AUTO TELEPORT SELL
+    local tpCard, tpContent = makeCard(autoPage, "AUTO TELEPORT", 3)
+
+    makeToggle(tpContent, "Auto Teleport ke Zona Sell", false, function(v)
+        Shared.AutoTeleportSell_Enabled = v
+        if v then notify("Auto TP Sell: ON", "success")
+        else notify("Auto TP Sell: OFF", "info") end
+    end)
+
+    registerTab("Auto", "A", "Auto")
+
+    -- ================= TAB 2: SETTINGS =================
+    
     -- ================= TAB 2: SETTINGS =================
     local setPage = createPage("Settings")
     pages.Settings = setPage
@@ -3112,7 +3153,12 @@ function UI.Init(sharedState)
 
     Shared.AntiAFK_Enabled = true
     Shared.ShowTitle = true
-
+    -- ===== ANIME DICE STATE =====
+    Shared.AutoRoll_Enabled = false
+    Shared.AutoEquipBest_Enabled = false
+    Shared.AutoClaim_Enabled = false
+    Shared.AutoTeleportSell_Enabled = false
+    
     Shared.LiveChat_Messages = {}
     Shared.LiveChat_MaxMessages = CFG.CHAT_MAX_MSG
     Shared.LiveChat_PollInterval = 1.5
