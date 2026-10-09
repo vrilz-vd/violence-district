@@ -3604,8 +3604,6 @@ end
                     dragging = false
                 end
             end)
-        end
-    end)
     header.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             dragInput = input
