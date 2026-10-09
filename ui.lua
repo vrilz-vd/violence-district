@@ -2626,8 +2626,8 @@ local function buildMainWindow(parent)
         end
     end)
 
-    return main       ← TAMBAHKAN INI
-end                   ← TAMBAHKAN INI
+    return main
+end
 
 -- ============================================================
 -- BUILD LIVE CHAT WINDOW (TERPISAH)
