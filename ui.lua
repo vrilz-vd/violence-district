@@ -2616,7 +2616,7 @@ local function buildMainWindow(parent)
             dragInput = input
         end
     end)
-    UserInputService.InputChanged:Connect(function(input)
+        UserInputService.InputChanged:Connect(function(input)
         if input == dragInput and dragging then
             local delta = input.Position - dragStart
             main.Position = UDim2.new(
@@ -2625,6 +2625,15 @@ local function buildMainWindow(parent)
             )
         end
     end)
+
+    return main       ← TAMBAHKAN INI
+end                   ← TAMBAHKAN INI
+
+-- ============================================================
+-- BUILD LIVE CHAT WINDOW (TERPISAH)
+-- ============================================================
+local function buildLiveChatWindow(screenGui)
+    ...
     -- ============================================================
     -- BUILD LIVE CHAT WINDOW (TERPISAH)
     -- ============================================================
