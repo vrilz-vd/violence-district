@@ -2385,7 +2385,7 @@ local function buildMainWindow(parent)
     local pages = {}
     local navs = {}
 
-    local function registerTab(id, icon, label)
+        local function registerTab(id, icon, label)
         local tabH = CFG.TAB_H
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, 0, 0, tabH)
@@ -2408,22 +2408,111 @@ local function buildMainWindow(parent)
         tabStroke.Parent = btn
         registerTheme(tabStroke, "Accent", "Color")
 
-        local ic = Instance.new("TextLabel")
-        if CFG.TAB_SHOW_LABEL then
-            ic.Size = UDim2.fromOffset(28, tabH)
-            ic.Position = UDim2.fromOffset(10, 0)
+        -- ============================================================
+        -- ICON: kalau "CROWN" → bikin mahkota dari frame (anti-kotak)
+        -- ============================================================
+        local ic = nil
+
+        if icon == "CROWN" then
+            -- Container icon
+            local crownBox = Instance.new("Frame")
+            if CFG.TAB_SHOW_LABEL then
+                crownBox.Size = UDim2.fromOffset(28, tabH)
+                crownBox.Position = UDim2.fromOffset(10, 0)
+            else
+                crownBox.Size = UDim2.fromScale(1, 1)
+                crownBox.Position = UDim2.fromOffset(0, 0)
+            end
+            crownBox.BackgroundTransparency = 1
+            crownBox.ZIndex = 6
+            crownBox.Parent = btn
+
+            -- Ukuran mahkota (di tengah icon box)
+            local cw = 18   -- lebar mahkota
+            local ch = 12   -- tinggi mahkota
+            local cx = (28 - cw) / 2   -- posisi X di tengah
+            local cy = (tabH - ch) / 2 -- posisi Y di tengah
+
+            -- Kalau mobile (icon full box), hitung ulang center
+            if not CFG.TAB_SHOW_LABEL then
+                cx = 0.5
+                cy = 0.5
+            end
+
+            -- Base mahkota (kotak bawah)
+            local base = Instance.new("Frame")
+            base.Name = "CrownBase"
+            base.Size = UDim2.fromOffset(cw, 3)
+            base.Position = CFG.TAB_SHOW_LABEL
+                and UDim2.fromOffset(cx, cy + ch - 3)
+                or UDim2.new(0.5, -cw/2, 0.5, ch/2 - 3)
+            base.BackgroundColor3 = C.Accent
+            base.BorderSizePixel = 0
+            base.ZIndex = 7
+            base.Parent = crownBox
+            registerTheme(base, "Accent", "BackgroundColor3")
+
+            local baseCorner = Instance.new("UICorner")
+            baseCorner.CornerRadius = UDim.new(0, 1)
+            baseCorner.Parent = base
+
+            -- 3 puncak mahkota (segitiga kecil pakai Frame yang di-rotate)
+            local peaks = {
+                {x = 0,   y = 0,     rot = 0},   -- kiri
+                {x = 0.5, y = -2,    rot = 0},   -- tengah (lebih tinggi)
+                {x = 1,   y = 0,     rot = 0},   -- kanan
+            }
+
+            for i, p in ipairs(peaks) do
+                local peak = Instance.new("Frame")
+                peak.Name = "CrownPeak" .. i
+                peak.Size = UDim2.fromOffset(4, 8)
+                peak.AnchorPoint = Vector2.new(0.5, 1)
+                peak.Rotation = 45  -- diputar biar keliatan kayak diamond
+
+                if CFG.TAB_SHOW_LABEL then
+                    peak.Position = UDim2.fromOffset(
+                        cx + (cw * p.x),
+                        cy + ch - 3 + p.y
+                    )
+                else
+                    peak.Position = UDim2.new(
+                        0.5,
+                        -(cw/2) + (cw * p.x),
+                        0.5,
+                        ch/2 - 3 + p.y
+                    )
+                end
+
+                peak.BackgroundColor3 = C.Accent
+                peak.BorderSizePixel = 0
+                peak.ZIndex = 7
+                peak.Parent = crownBox
+                registerTheme(peak, "Accent", "BackgroundColor3")
+
+                local pkCorner = Instance.new("UICorner")
+                pkCorner.CornerRadius = UDim.new(0, 1)
+                pkCorner.Parent = peak
+            end
         else
-            ic.Size = UDim2.fromScale(1, 1)
-            ic.Position = UDim2.fromOffset(0, 0)
+            -- Icon text biasa (emoji / huruf)
+            ic = Instance.new("TextLabel")
+            if CFG.TAB_SHOW_LABEL then
+                ic.Size = UDim2.fromOffset(28, tabH)
+                ic.Position = UDim2.fromOffset(10, 0)
+            else
+                ic.Size = UDim2.fromScale(1, 1)
+                ic.Position = UDim2.fromOffset(0, 0)
+            end
+            ic.BackgroundTransparency = 1
+            ic.Text = icon
+            ic.TextSize = CFG.TAB_ICON
+            ic.Font = Enum.Font.GothamBold
+            ic.TextColor3 = C.Accent
+            ic.ZIndex = 6
+            ic.Parent = btn
+            registerTheme(ic, "Accent", "TextColor3")
         end
-        ic.BackgroundTransparency = 1
-        ic.Text = icon
-        ic.TextSize = CFG.TAB_ICON
-        ic.Font = Enum.Font.GothamBold
-        ic.TextColor3 = C.Accent
-        ic.ZIndex = 6
-        ic.Parent = btn
-        registerTheme(ic, "Accent", "TextColor3")
 
         if CFG.TAB_SHOW_LABEL then
             local lbl = Instance.new("TextLabel")
@@ -2438,12 +2527,12 @@ local function buildMainWindow(parent)
             lbl.ZIndex = 6
             lbl.Parent = btn
             registerTheme(lbl, "Muted", "TextColor3")
-            navs[id] = {btn = btn, ic = ic, lbl = lbl}
+            navs[id] = {btn = btn, ic = ic, lbl = lbl, crown = (icon == "CROWN")}
         else
-            navs[id] = {btn = btn, ic = ic, lbl = nil}
+            navs[id] = {btn = btn, ic = ic, lbl = nil, crown = (icon == "CROWN")}
         end
 
-              local function switchTo()
+        local function switchTo()
             for n, p in pairs(pages) do
                 if p then p.Visible = false end
             end
@@ -2454,13 +2543,32 @@ local function buildMainWindow(parent)
                 if n == id then
                     x.btn.BackgroundColor3 = C.Accent
                     x.btn.BackgroundTransparency = 0
-                    x.ic.TextColor3 = Color3.new(1, 1, 1)
+                    if x.ic then
+                        x.ic.TextColor3 = Color3.new(1, 1, 1)
+                    end
+                    -- Kalau crown, ubah warna semua frame jadi putih
+                    if x.crown then
+                        for _, child in ipairs(x.btn:GetDescendants()) do
+                            if child:IsA("Frame") and child.Name:find("Crown") then
+                                child.BackgroundColor3 = Color3.new(1, 1, 1)
+                            end
+                        end
+                    end
                     if x.btn:FindFirstChildOfClass("UIStroke") then x.btn:FindFirstChildOfClass("UIStroke").Transparency = 0.15 end
                     if x.lbl then x.lbl.TextColor3 = Color3.new(1, 1, 1) end
                 else
                     x.btn.BackgroundColor3 = C.Surface3
                     x.btn.BackgroundTransparency = 0.5
-                    x.ic.TextColor3 = C.Accent
+                    if x.ic then
+                        x.ic.TextColor3 = C.Accent
+                    end
+                    if x.crown then
+                        for _, child in ipairs(x.btn:GetDescendants()) do
+                            if child:IsA("Frame") and child.Name:find("Crown") then
+                                child.BackgroundColor3 = C.Accent
+                            end
+                        end
+                    end
                     if x.btn:FindFirstChildOfClass("UIStroke") then x.btn:FindFirstChildOfClass("UIStroke").Transparency = 0.82 end
                     if x.lbl then x.lbl.TextColor3 = C.Muted end
                 end
@@ -2470,7 +2578,6 @@ local function buildMainWindow(parent)
         btn.MouseButton1Click:Connect(switchTo)
         return btn, switchTo
     end
-
     local function createPage(name)
         local page = Instance.new("ScrollingFrame")
         page.Name = name
@@ -2554,7 +2661,7 @@ local function buildMainWindow(parent)
     end)
 
     -- Register tab ke sidebar dengan logo mahkota
-    registerTab("AutoMain", "♕", "AUTO MAIN")
+    registerTab("AutoMain", "CROWN", "AUTO MAIN")
 
     -- Auto switch ke tab ini pas pertama kali buka
     task.defer(function()
