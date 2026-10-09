@@ -1,5 +1,5 @@
 --=============================================================
--- VRILZHUB FEATURES - ANIME DICE v5 (AUTO ROLL + AUTO COLLECT)
+-- VRILZHUB FEATURES - ANIME DICE v6 (AUTO ROLL + AUTO COLLECT + ANTI AFK)
 --=============================================================
 
 local Players = game:GetService("Players")
@@ -233,6 +233,21 @@ task.spawn(function()
                     end)
                 end
             end
+        end
+    end
+end)
+
+--========== ANTI AFK ==========
+-- Trigger input tiap 10 detik biar Roblox gak kick karena AFK
+task.spawn(function()
+    local VirtualUser = game:GetService("VirtualUser")
+
+    while task.wait(10) do
+        if S().AntiAFK_Enabled then
+            pcall(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
         end
     end
 end)
