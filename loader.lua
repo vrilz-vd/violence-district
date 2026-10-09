@@ -1,52 +1,56 @@
--- ============================================================
--- VRILZHUB LOADER — VIOLENCE DISTRICT
--- ============================================================
+--=============================================================
+-- 🎲 VRILZHUB LOADER — ANIME DICE
+-- Load features.lua + ui.lua dari GitHub
+--=============================================================
 
-local CONFIG = {
-    GameId = 93978595733734,
-    BaseURL = "https://raw.githubusercontent.com/vrilz-vd/violence-district/main/",
-    Features = "features.lua",
-    UI = "ui.lua",
-}
+local GITHUB_RAW = "https://raw.githubusercontent.com/USERNAME/anime-dice-auto/main"
 
-if game.PlaceId ~= CONFIG.GameId then
-    warn("[VRILZHUB] Bukan Violence District, abort")
-    return
-end
-
-print("[VRILZHUB] Loading Violence District...")
-
-local function loadScript(url, name)
-    local fullURL = CONFIG.BaseURL .. url
-    local ok, source = pcall(function()
-        return game:HttpGet(fullURL)
+local function loadScript(path)
+    local url = GITHUB_RAW .. "/" .. path
+    local ok, code = pcall(function()
+        return game:HttpGet(url)
     end)
-    if not ok or not source then
-        warn("[VRILZHUB] Gagal load " .. name .. " dari " .. fullURL)
+    if not ok or not code or #code < 10 then
+        warn("[Loader] Gagal load: " .. path)
         return nil
     end
-    local fn, err = loadstring(source)
-    if not fn then
-        warn("[VRILZHUB] Gagal compile " .. name .. ": " .. tostring(err))
-        return nil
-    end
-    local ok2, result = pcall(fn)
-    if not ok2 then
-        warn("[VRILZHUB] Gagal execute " .. name .. ": " .. tostring(result))
-        return nil
-    end
-    print("[VRILZHUB] " .. name .. " loaded OK")
-    return result
+    return code
 end
 
-local Features = loadScript(CONFIG.Features, "features")
-if not Features then return end
+print("========================================")
+print("🎲 VRILZHUB ANIME DICE LOADER")
+print("========================================")
 
-local UI = loadScript(CONFIG.UI, "ui")
-if not UI then return end
+-- 1. Load FEATURES dulu (biar _G.VRILZ_Features ada)
+print("[Loader] Loading features.lua...")
+local featCode = loadScript("features.lua")
+if not featCode then
+    return warn("[Loader] Features ga bisa di-load")
+end
 
-local Shared = {}
-Features.Init(Shared)
-UI.Init(Shared)
+local featOk, featErr = pcall(function()
+    loadstring(featCode)()
+end)
+if not featOk then
+    return warn("[Loader] Features error: " .. tostring(featErr))
+end
+print("[Loader] ✅ Features loaded")
 
-print("[VRILZHUB] Violence District loaded!")
+-- 2. Load UI
+print("[Loader] Loading ui.lua...")
+local uiCode = loadScript("ui.lua")
+if not uiCode then
+    return warn("[Loader] UI ga bisa di-load")
+end
+
+local uiOk, uiErr = pcall(function()
+    loadstring(uiCode)()
+end)
+if not uiOk then
+    return warn("[Loader] UI error: " .. tostring(uiErr))
+end
+print("[Loader] ✅ UI loaded")
+
+print("========================================")
+print("✅ VRILZHUB ANIME DICE READY")
+print("========================================")
