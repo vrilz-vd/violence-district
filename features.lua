@@ -1,6 +1,6 @@
 --=============================================================
--- 🎲 VRILZHUB FEATURES — ANIME DICE (FIXED)
--- Anti-error, anti-nil, ada guard
+-- 🎲 VRILZHUB FEATURES — ANIME DICE (FIXED v2)
+-- Ganti string.split jadi split manual
 --=============================================================
 
 local Players = game:GetService("Players")
@@ -16,11 +16,22 @@ if not Network then
 end
 print("[Features] ✅ Network found")
 
+--========== SPLIT MANUAL (GA PAKE string.split) ==========
+local function split(str, sep)
+    local result = {}
+    local pattern = "([^" .. sep .. "]+)"
+    for match in string.gmatch(str, pattern) do
+        table.insert(result, match)
+    end
+    return result
+end
+
 --========== GET REMOTE (SAFE) ==========
 local function getRemote(path)
     if not path or path == "" then return nil end
     local cur = RS
-    for _, part in ipairs(string.split(path, ".")) do
+    local parts = split(path, ".")
+    for _, part in ipairs(parts) do
         if not cur then return nil end
         cur = cur:FindFirstChild(part)
         if not cur then return nil end
@@ -30,25 +41,21 @@ end
 
 --========== AMBIL REMOTE ==========
 local Remotes = {
-    -- Roll
     SetAutoRoll   = getRemote("Network.RollService.RE.SetAutoRoll"),
     RollDice      = getRemote("Network.RollService.RF.RollDice"),
-    -- Sell
     SellInventory = getRemote("Network.SellService.RF.SellInventory"),
     SellEquipped  = getRemote("Network.SellService.RF.SellEquipped"),
     UpdateAutoSell= getRemote("Network.SellService.RE.UpdateAutoSell"),
-    -- Unit
     EquipBest     = getRemote("Network.PlotService.RE.EquipBest"),
     Equip         = getRemote("Network.UnitService.RF.Equip"),
     Unequip       = getRemote("Network.UnitService.RF.Unequip"),
-    -- Claim
     DailyClaim    = getRemote("Network.DailyRewardService.RE.Claim"),
     QuestClaim    = getRemote("Network.QuestService.RE.Claim"),
     OfflineClaim  = getRemote("Network.OfflineEarningsService.RE.Claim"),
     GroupClaim    = getRemote("Network.GroupRewardService.RE.Claim"),
 }
 
---========== VALIDASI REMOTE ==========
+--========== VALIDASI ==========
 print("[Features] Remote status:")
 for name, remote in pairs(Remotes) do
     print(string.format("  %-15s : %s", name, remote and "✅" or "❌"))
@@ -98,21 +105,14 @@ end
 
 --========== RARITY → CHANCE ==========
 local RARITY_CHANCE = {
-    Common = 10,
-    Uncommon = 100,
-    Rare = 1000,
-    Epic = 10000,
-    Legendary = 100000,
-    Mythical = 1000000,
-    Divine = 10000000,
-    Celestial = 100000000,
-    Exotic = 1000000000,
-    ["Secret I"] = 10000000000,
-    ["Secret II"] = 100000000000,
+    Common = 10, Uncommon = 100, Rare = 1000, Epic = 10000,
+    Legendary = 100000, Mythical = 1000000, Divine = 10000000,
+    Celestial = 100000000, Exotic = 1000000000,
+    ["Secret I"] = 10000000000, ["Secret II"] = 100000000000,
     Exclusive = 999999999999999,
 }
 
---========== SHARED STATE ACCESS ==========
+--========== SHARED STATE ==========
 local function S()
     return _G.VRILZ_UI_Shared or {}
 end
@@ -120,31 +120,29 @@ end
 --========== FEATURES ==========
 local Features = {}
 
---========== AUTO ROLL ==========
+-- AUTO ROLL
 task.spawn(function()
     local lastState = nil
     while task.wait(1) do
         local state = S().AutoRoll_Enabled
         if state ~= nil and state ~= lastState then
             lastState = state
-            if Remotes.SetAutoRoll then
-                fire(Remotes.SetAutoRoll, state)
-                print("[Features] Auto Roll: " .. tostring(state))
-            end
+            fire(Remotes.SetAutoRoll, state)
+            print("[Features] Auto Roll: " .. tostring(state))
         end
     end
 end)
 
---========== AUTO EQUIP BEST ==========
+-- AUTO EQUIP BEST
 task.spawn(function()
     while task.wait(3) do
-        if S().AutoEquipBest_Enabled and Remotes.EquipBest then
+        if S().AutoEquipBest_Enabled then
             fire(Remotes.EquipBest)
         end
     end
 end)
 
---========== AUTO CLAIM ==========
+-- AUTO CLAIM
 task.spawn(function()
     while task.wait(120) do
         if S().AutoClaim_Enabled then
@@ -155,12 +153,11 @@ task.spawn(function()
             fire(Remotes.OfflineClaim)
             task.wait(3)
             fire(Remotes.GroupClaim)
-            print("[Features] Auto Claim done")
         end
     end
 end)
 
---========== HITUNG THRESHOLD ==========
+-- HITUNG THRESHOLD
 local function calculateThreshold()
     local keep = S().KeepRarity or {}
     local lowest = nil
@@ -172,16 +169,14 @@ local function calculateThreshold()
             end
         end
     end
-    if not lowest then
-        return 999999999999999
-    end
+    if not lowest then return 999999999999999 end
     return math.floor(lowest / 2)
 end
 
---========== AUTO SELL BY RARITY ==========
+-- AUTO SELL
 task.spawn(function()
     while task.wait(15) do
-        if S().AutoSell_Enabled and Remotes.UpdateAutoSell then
+        if S().AutoSell_Enabled then
             local threshold = calculateThreshold()
             fire(Remotes.UpdateAutoSell, threshold)
             print("[Features] AutoSell threshold: 1 in " .. threshold)
@@ -189,7 +184,7 @@ task.spawn(function()
     end
 end)
 
---========== AUTO TELEPORT KE ZONA SELL ==========
+-- AUTO TELEPORT KE ZONA SELL
 task.spawn(function()
     while task.wait(5) do
         if S().AutoTeleportSell_Enabled and SellingZone then
@@ -203,7 +198,7 @@ task.spawn(function()
     end
 end)
 
---========== EXPOSE ==========
+-- EXPOSE
 Features.Remotes = Remotes
 Features.SellingZone = SellingZone
 Features.fire = fire
