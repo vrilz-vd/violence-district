@@ -1,5 +1,5 @@
 -- ============================================================
--- VRILZHUB UI — ANIME DICE v1.0 (CLEAN)
+-- VRILZHUB UI — ANIME DICE v1.0 (CLEAN · NO KEY)
 -- PC: 800x580 | Mobile: 88% x 78% viewport
 -- ============================================================
 
@@ -13,7 +13,6 @@ local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 
--- Ambil Features dari _G
 local function getFeatures()
     return _G.VRILZ_Features
 end
@@ -51,10 +50,9 @@ local UI_CONFIG = {
     },
 }
 
-local KEY_SYSTEM_URL = "https://key-system.vrilzwops.workers.dev"
 local CFG = IS_MOBILE and UI_CONFIG.MOBILE or UI_CONFIG.PC
 
--- ====== RARITY (buat auto sell by rarity) ======
+-- ====== RARITY ======
 local RarityList = {
     "Common", "Uncommon", "Rare", "Epic", "Legendary",
     "Mythical", "Divine", "Celestial", "Exotic",
@@ -312,7 +310,6 @@ local function makeCard(parent, title, layoutOrder)
     stroke.Parent = card
     registerTheme(stroke, "Accent", "Color")
 
-    -- Header
     local headerFrame = Instance.new("Frame")
     headerFrame.Size = UDim2.new(1, 0, 0, CFG.CARD_HEADER)
     headerFrame.BackgroundColor3 = C.Surface2
@@ -1028,7 +1025,6 @@ local function buildMainWindow(parent)
     subtitle.Parent = header
     registerTheme(subtitle, "Muted", "TextColor3")
 
-    -- Min & Close
     local minBtn = Instance.new("TextButton")
     minBtn.Size = UDim2.fromOffset(IS_MOBILE and 28 or 32, IS_MOBILE and 28 or 32)
     minBtn.Position = UDim2.new(1, -(IS_MOBILE and 74 or 84), 0.5, -(IS_MOBILE and 14 or 16))
@@ -1069,7 +1065,6 @@ local function buildMainWindow(parent)
 
     local sidebarW = CFG.SIDEBAR_W
 
-    -- SIDEBAR
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, sidebarW, 1, 0)
     sidebar.BackgroundColor3 = C.Surface
@@ -1104,7 +1099,6 @@ local function buildMainWindow(parent)
     sidebarPad.PaddingRight = UDim.new(0, 6)
     sidebarPad.Parent = sidebarScroll
 
-    -- PAGE HOLDER
     local pageHolder = Instance.new("ScrollingFrame")
     pageHolder.Size = UDim2.new(1, -(sidebarW + 10), 1, 0)
     pageHolder.Position = UDim2.new(0, sidebarW + 10, 0, 0)
@@ -1125,7 +1119,7 @@ local function buildMainWindow(parent)
     pageHolderPad.PaddingRight = UDim.new(0, IS_MOBILE and 6 or 10)
     pageHolderPad.Parent = pageHolder
 
-    -- OPEN BUTTON (minimize)
+    -- OPEN BUTTON
     local openBtn = Instance.new("TextButton")
     openBtn.Size = UDim2.fromOffset(CFG.OPEN_BTN, CFG.OPEN_BTN)
     openBtn.Position = UDim2.fromOffset(20, 20)
@@ -1166,7 +1160,8 @@ local function buildMainWindow(parent)
             Size = UDim2.fromOffset(0, 0)
         }):Play()
         task.delay(0.3, function()
-            screenGui:Destroy()
+            main.Visible = false
+            openBtn.Visible = true
         end)
     end)
 
@@ -1292,9 +1287,7 @@ local function buildMainWindow(parent)
         return page
     end
 
-    -- ============================================================
     -- TAB 1: INFO
-    -- ============================================================
     local infoPage = createPage("Info")
     pages.Info = infoPage
 
@@ -1348,7 +1341,6 @@ local function buildMainWindow(parent)
     userLbl.Parent = avRow
     registerTheme(userLbl, "Muted", "TextColor3")
 
-    -- Update card
     local updateCard, updateContent = makeCard(infoPage, "📢 UPDATE INFORMATION", 2)
 
     local infoLines = {
@@ -1373,7 +1365,6 @@ local function buildMainWindow(parent)
         registerTheme(lbl, "Muted", "TextColor3")
     end
 
-    -- Discord card
     local discordCard, discordContent = makeCard(infoPage, "💬 JOIN DISCORD", 3)
     local DISCORD_LINK = "https://discord.gg/psWhrYWbq"
 
@@ -1411,13 +1402,10 @@ local function buildMainWindow(parent)
 
     registerTab("Info", "ℹ", "Info")
 
-    -- ============================================================
     -- TAB 2: SETTINGS
-    -- ============================================================
     local setPage = createPage("Settings")
     pages.Settings = setPage
 
-    -- ANTI-AFK
     local afkCard, afkContent = makeCard(setPage, "🛡 ANTI-AFK", 1)
 
     makeToggle(afkContent, "Enable Anti-AFK", true, function(v)
@@ -1426,7 +1414,6 @@ local function buildMainWindow(parent)
         else notify("🛡 Anti-AFK: OFF", "info") end
     end)
 
-    -- THEME
     local themeCard, themeContent = makeCard(setPage, "🎨 THEME", 2)
 
     local themeLbl = Instance.new("TextLabel")
@@ -1449,9 +1436,7 @@ local function buildMainWindow(parent)
 
     registerTab("Settings", "⚙", "Settings")
 
-    -- ============================================================
-    -- SET DEFAULT TAB
-    -- ============================================================
+    -- DEFAULT TAB
     pages.Info.Visible = true
     navs.Info.btn.BackgroundColor3 = C.Accent
     navs.Info.btn.BackgroundTransparency = 0
@@ -1493,11 +1478,285 @@ local function buildMainWindow(parent)
 end
 
 -- ============================================================
--- SIMPLE LOADING (langsung main, tanpa key system dulu)
+-- LOADING SCREEN BRUTAL (TETAP DIPAKAI)
 -- ============================================================
-local function startMain(parent)
-    buildMainWindow(parent)
-    notify("Welcome, " .. LocalPlayer.DisplayName, "success")
+local function buildLoadingScreen(parent)
+    local winW = IS_MOBILE and 280 or 360
+    local winH = IS_MOBILE and 200 or 240
+
+    local loading = Instance.new("Frame")
+    loading.Name = "LoadingScreen"
+    loading.AnchorPoint = Vector2.new(0.5, 0.5)
+    loading.Position = UDim2.fromScale(0.5, 0.5)
+    loading.Size = UDim2.fromOffset(0, 0)
+    loading.BackgroundColor3 = Color3.fromRGB(5, 0, 2)
+    loading.BorderSizePixel = 0
+    loading.ZIndex = 300
+    loading.ClipsDescendants = true
+    loading.Parent = parent
+
+    local stroke1 = Instance.new("UIStroke")
+    stroke1.Color = Color3.fromRGB(255, 30, 60)
+    stroke1.Thickness = 3
+    stroke1.Parent = loading
+
+    local stroke2 = Instance.new("UIStroke")
+    stroke2.Color = Color3.fromRGB(255, 255, 255)
+    stroke2.Thickness = 1
+    stroke2.Transparency = 0.7
+    stroke2.Parent = loading
+
+    local topBar = Instance.new("Frame")
+    topBar.Size = UDim2.new(1, 0, 0, 4)
+    topBar.BackgroundColor3 = Color3.fromRGB(255, 30, 60)
+    topBar.BorderSizePixel = 0
+    topBar.ZIndex = 310
+    topBar.Parent = loading
+
+    local botBar = Instance.new("Frame")
+    botBar.Size = UDim2.new(1, 0, 0, 4)
+    botBar.Position = UDim2.new(0, 0, 1, -4)
+    botBar.BackgroundColor3 = Color3.fromRGB(255, 30, 60)
+    botBar.BorderSizePixel = 0
+    botBar.ZIndex = 310
+    botBar.Parent = loading
+
+    local scanlines = Instance.new("Frame")
+    scanlines.Size = UDim2.fromScale(1, 1)
+    scanlines.BackgroundTransparency = 1
+    scanlines.ZIndex = 320
+    scanlines.ClipsDescendants = true
+    scanlines.Parent = loading
+
+    for i = 0, math.floor(winH / 4) do
+        local line = Instance.new("Frame")
+        line.Size = UDim2.new(1, 0, 0, 1)
+        line.Position = UDim2.fromOffset(0, i * 4)
+        line.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        line.BackgroundTransparency = 0.65
+        line.BorderSizePixel = 0
+        line.ZIndex = 320
+        line.Parent = scanlines
+    end
+
+    local noise = Instance.new("Frame")
+    noise.Size = UDim2.fromScale(1, 1)
+    noise.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    noise.BackgroundTransparency = 0.93
+    noise.BorderSizePixel = 0
+    noise.ZIndex = 319
+    noise.Parent = loading
+
+    local vHolder = Instance.new("Frame")
+    vHolder.Size = UDim2.fromScale(1, 0.55)
+    vHolder.Position = UDim2.fromScale(0, 0.15)
+    vHolder.BackgroundTransparency = 1
+    vHolder.ZIndex = 305
+    vHolder.Parent = loading
+
+    local vGlow = Instance.new("TextLabel")
+    vGlow.Size = UDim2.fromScale(1, 1)
+    vGlow.BackgroundTransparency = 1
+    vGlow.Text = "V"
+    vGlow.TextColor3 = Color3.fromRGB(255, 30, 60)
+    vGlow.TextTransparency = 0.3
+    vGlow.Font = Enum.Font.GothamBlack
+    vGlow.TextSize = 1
+    vGlow.ZIndex = 304
+    vGlow.Parent = vHolder
+
+    local vRed = Instance.new("TextLabel")
+    vRed.Size = UDim2.fromScale(1, 1)
+    vRed.Position = UDim2.fromOffset(-2, 0)
+    vRed.BackgroundTransparency = 1
+    vRed.Text = "V"
+    vRed.TextColor3 = Color3.fromRGB(255, 0, 0)
+    vRed.TextTransparency = 0.6
+    vRed.Font = Enum.Font.GothamBlack
+    vRed.TextSize = 1
+    vRed.ZIndex = 305
+    vRed.Parent = vHolder
+
+    local vBlue = Instance.new("TextLabel")
+    vBlue.Size = UDim2.fromScale(1, 1)
+    vBlue.Position = UDim2.fromOffset(2, 0)
+    vBlue.BackgroundTransparency = 1
+    vBlue.Text = "V"
+    vBlue.TextColor3 = Color3.fromRGB(0, 100, 255)
+    vBlue.TextTransparency = 0.6
+    vBlue.Font = Enum.Font.GothamBlack
+    vBlue.TextSize = 1
+    vBlue.ZIndex = 305
+    vBlue.Parent = vHolder
+
+    local vLabel = Instance.new("TextLabel")
+    vLabel.Size = UDim2.fromScale(1, 1)
+    vLabel.BackgroundTransparency = 1
+    vLabel.Text = "V"
+    vLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    vLabel.Font = Enum.Font.GothamBlack
+    vLabel.TextSize = 1
+    vLabel.ZIndex = 306
+    vLabel.Parent = vHolder
+
+    local loadingText = Instance.new("TextLabel")
+    loadingText.Size = UDim2.new(1, -20, 0, 18)
+    loadingText.Position = UDim2.new(0, 10, 0, winH - 68)
+    loadingText.BackgroundTransparency = 1
+    loadingText.Text = "LOADING..."
+    loadingText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    loadingText.Font = Enum.Font.GothamBlack
+    loadingText.TextSize = IS_MOBILE and 11 or 12
+    loadingText.TextXAlignment = Enum.TextXAlignment.Left
+    loadingText.ZIndex = 306
+    loadingText.Parent = loading
+
+    local barBg = Instance.new("Frame")
+    barBg.Size = UDim2.new(1, -20, 0, 6)
+    barBg.Position = UDim2.new(0, 10, 0, winH - 44)
+    barBg.BackgroundColor3 = Color3.fromRGB(30, 5, 10)
+    barBg.BorderSizePixel = 0
+    barBg.ZIndex = 305
+    barBg.Parent = loading
+
+    local barStroke = Instance.new("UIStroke")
+    barStroke.Color = Color3.fromRGB(255, 30, 60)
+    barStroke.Thickness = 1
+    barStroke.Transparency = 0.3
+    barStroke.Parent = barBg
+
+    local barFill = Instance.new("Frame")
+    barFill.Size = UDim2.new(0, 0, 1, 0)
+    barFill.BackgroundColor3 = Color3.fromRGB(255, 30, 60)
+    barFill.BorderSizePixel = 0
+    barFill.ZIndex = 306
+    barFill.Parent = barBg
+
+    local percentLbl = Instance.new("TextLabel")
+    percentLbl.Size = UDim2.new(1, -20, 0, 14)
+    percentLbl.Position = UDim2.new(0, 10, 0, winH - 26)
+    percentLbl.BackgroundTransparency = 1
+    percentLbl.Text = "0%"
+    percentLbl.TextColor3 = Color3.fromRGB(255, 30, 60)
+    percentLbl.Font = Enum.Font.GothamBlack
+    percentLbl.TextSize = 10
+    percentLbl.TextXAlignment = Enum.TextXAlignment.Right
+    percentLbl.ZIndex = 306
+    percentLbl.Parent = loading
+
+    local brandLbl = Instance.new("TextLabel")
+    brandLbl.Size = UDim2.new(1, -20, 0, 14)
+    brandLbl.Position = UDim2.new(0, 10, 0, winH - 26)
+    brandLbl.BackgroundTransparency = 1
+    brandLbl.Text = "V R I L Z H U B"
+    brandLbl.TextColor3 = Color3.fromRGB(150, 80, 100)
+    brandLbl.Font = Enum.Font.GothamBold
+    brandLbl.TextSize = 10
+    brandLbl.TextXAlignment = Enum.TextXAlignment.Left
+    brandLbl.ZIndex = 306
+    brandLbl.Parent = loading
+
+    -- Animasi noise
+    task.spawn(function()
+        while loading.Parent do
+            task.wait(0.05)
+            noise.BackgroundTransparency = 0.88 + math.random() * 0.08
+        end
+    end)
+
+    -- Animasi glow
+    task.spawn(function()
+        while loading.Parent do
+            task.wait(0.5)
+            TweenService:Create(vGlow, TweenInfo.new(0.5), {TextTransparency = 0.1}):Play()
+            task.wait(0.5)
+            TweenService:Create(vGlow, TweenInfo.new(0.5), {TextTransparency = 0.4}):Play()
+        end
+    end)
+
+    -- Animasi V
+    task.spawn(function()
+        local startSize = 1
+        local endSize = IS_MOBILE and 130 or 170
+        local duration = 1.2
+        local steps = 40
+        for i = 1, steps do
+            task.wait(duration / steps)
+            local t = i / steps
+            local eased = 1 - (1 - t) ^ 3
+            local size = startSize + (endSize - startSize) * eased
+            vLabel.TextSize = size
+            vGlow.TextSize = size
+            vRed.TextSize = size
+            vBlue.TextSize = size
+        end
+
+        task.wait(0.2)
+        for i = 1, 6 do
+            vLabel.Position = UDim2.fromOffset(math.random(-6, 6), math.random(-6, 6))
+            task.wait(0.04)
+            vLabel.Position = UDim2.fromOffset(0, 0)
+        end
+    end)
+
+    -- Animasi loading bar + selesai
+    task.spawn(function()
+        loading.Size = UDim2.fromOffset(0, 0)
+        TweenService:Create(loading, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.fromOffset(winW, winH)
+        }):Play()
+        task.wait(0.6)
+
+        loadingText.Text = "INITIALIZING..."
+        for i = 1, 30 do
+            task.wait(0.1)
+            local p = (i / 30) * 0.15
+            barFill.Size = UDim2.new(p, 0, 1, 0)
+            percentLbl.Text = math.floor(p * 100) .. "%"
+        end
+
+        local phases = {
+            {text = "LOADING MODULES...", target = 0.4, duration = 2.5},
+            {text = "CONNECTING SERVER...", target = 0.6, duration = 2.5},
+            {text = "LOADING FEATURES...", target = 0.8, duration = 2.5},
+            {text = "FINALIZING...", target = 1.0, duration = 2.5},
+        }
+
+        for _, phase in ipairs(phases) do
+            loadingText.Text = phase.text
+            local startP = barFill.Size.X.Scale
+            local steps = math.floor(phase.duration / 0.05)
+            for i = 1, steps do
+                task.wait(0.05)
+                local t = i / steps
+                local p = startP + (phase.target - startP) * t
+                barFill.Size = UDim2.new(p, 0, 1, 0)
+                percentLbl.Text = math.floor(p * 100) .. "%"
+            end
+        end
+
+        loadingText.Text = "READY!"
+        percentLbl.Text = "100%"
+
+        for i = 1, 8 do
+            loading.Position = UDim2.fromScale(0.5 + math.random(-15, 15)/1000, 0.5 + math.random(-15, 15)/1000)
+            task.wait(0.03)
+        end
+        loading.Position = UDim2.fromScale(0.5, 0.5)
+
+        task.wait(0.6)
+
+        TweenService:Create(loading, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+            Size = UDim2.fromOffset(0, 0)
+        }):Play()
+        task.wait(0.5)
+
+        if loading then loading:Destroy() end
+
+        -- Build main window setelah loading selesai
+        buildMainWindow(parent)
+        notify("Welcome, " .. LocalPlayer.DisplayName, "success")
+    end)
 end
 
 -- ============================================================
@@ -1508,22 +1767,24 @@ function UI.Init(sharedState)
     Shared.Notify = notify
     _G.VRILZ_UI_Shared = Shared
 
-    -- ===== ANIME DICE STATE =====
     Shared.AntiAFK_Enabled = true
 
-    -- ===== SCREEN GUI =====
+    -- Parent ke PlayerGui (anti error, ga perlu CoreGui)
+    local parentGui = LocalPlayer:WaitForChild("PlayerGui")
+
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "VRILZHUB_AnimeDice"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.IgnoreGuiInset = true
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    ScreenGui.Parent = game:GetService("CoreGui")
+    ScreenGui.Parent = parentGui
 
     setupNotifHolder(ScreenGui)
     setupDropdownLayer(ScreenGui)
 
-    -- Langsung build main window
-    startMain(ScreenGui)
+    -- Langsung loading (tanpa key gate)
+    buildLoadingScreen(ScreenGui)
 end
 
+_G.VRILZ_UI = UI
 return UI
