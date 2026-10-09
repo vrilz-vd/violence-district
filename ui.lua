@@ -3107,9 +3107,11 @@ local function buildMainWindow(parent)
             if enter then doSend() end
         end)
 
-        print("[CHAT] buildLiveChatWindow OK")
+                print("[CHAT] buildLiveChatWindow OK")
         return win
     end
+
+end   -- ← ✅ TAMBAH `end` INI (nutup buildMainWindow)
 
 -- ============================================================
 -- LOADING SCREEN BRUTAL
