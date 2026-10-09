@@ -1381,19 +1381,26 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
     return container
 end
 
--- ====== FPS WINDOW ======
+-- ====== FPS WINDOW (bisa di-toggle) ======
+local fpsWindowRef = nil
+
 local function buildFPSWindow(parent)
+    if fpsWindowRef then
+        fpsWindowRef:Destroy()
+        fpsWindowRef = nil
+    end
+
     local fpsWin = Instance.new("Frame")
     fpsWin.Name = "FPSWindow"
-    fpsWin.Size = UDim2.fromOffset(IS_MOBILE and 160 or 180, IS_MOBILE and 64 or 70)
+    fpsWin.Size = UDim2.fromOffset(IS_MOBILE and 140 or 160, IS_MOBILE and 56 or 60)
     fpsWin.Position = UDim2.fromOffset(20, 90)
     fpsWin.BackgroundColor3 = C.Surface
     fpsWin.BackgroundTransparency = 0.1
     fpsWin.BorderSizePixel = 0
-    fpsWin.Visible = false
     fpsWin.ZIndex = 60
     fpsWin.Parent = parent
     registerTheme(fpsWin, "Surface", "BackgroundColor3")
+    fpsWindowRef = fpsWin
 
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 12)
@@ -1407,33 +1414,61 @@ local function buildFPSWindow(parent)
     registerTheme(stroke, "Accent", "Color")
 
     local fpsLbl = Instance.new("TextLabel")
-    fpsLbl.Size = UDim2.new(1, -20, 0, 24)
-    fpsLbl.Position = UDim2.fromOffset(10, 8)
+    fpsLbl.Size = UDim2.new(1, -20, 0, 20)
+    fpsLbl.Position = UDim2.fromOffset(10, 6)
     fpsLbl.BackgroundTransparency = 1
     fpsLbl.Text = "FPS: --"
     fpsLbl.TextColor3 = C.Text
     fpsLbl.Font = Enum.Font.GothamBold
-    fpsLbl.TextSize = IS_MOBILE and 12 or 14
+    fpsLbl.TextSize = IS_MOBILE and 11 or 13
     fpsLbl.TextXAlignment = Enum.TextXAlignment.Left
     fpsLbl.ZIndex = 61
     fpsLbl.Parent = fpsWin
     registerTheme(fpsLbl, "Text", "TextColor3")
 
     local pingLbl = Instance.new("TextLabel")
-    pingLbl.Size = UDim2.new(1, -20, 0, 20)
-    pingLbl.Position = UDim2.fromOffset(10, IS_MOBILE and 30 or 34)
+    pingLbl.Size = UDim2.new(1, -20, 0, 18)
+    pingLbl.Position = UDim2.fromOffset(10, IS_MOBILE and 26 or 28)
     pingLbl.BackgroundTransparency = 1
     pingLbl.Text = "PING: --"
     pingLbl.TextColor3 = C.Accent2
     pingLbl.Font = Enum.Font.GothamBold
-    pingLbl.TextSize = IS_MOBILE and 11 or 12
+    pingLbl.TextSize = IS_MOBILE and 10 or 11
     pingLbl.TextXAlignment = Enum.TextXAlignment.Left
     pingLbl.ZIndex = 61
     pingLbl.Parent = fpsWin
     registerTheme(pingLbl, "Accent2", "TextColor3")
 
+    -- Drag support
+    local dragging, dragStart, startPos = false, nil, nil
+    fpsWin.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+           or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = fpsWin.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+           or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            fpsWin.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+           or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
     local frames, last = 0, os.clock()
     RunService.RenderStepped:Connect(function()
+        if not fpsWin.Parent then return end
         frames = frames + 1
         local elapsed = os.clock() - last
         if elapsed >= 0.5 then
@@ -1452,6 +1487,16 @@ local function buildFPSWindow(parent)
     return fpsWin
 end
 
+local function toggleFPSWindow(show, parent)
+    if show then
+        buildFPSWindow(parent or game:GetService("CoreGui"):FindFirstChild("VRILZHUB_RideAPet"))
+    else
+        if fpsWindowRef then
+            fpsWindowRef:Destroy()
+            fpsWindowRef = nil
+        end
+    end
+end
 -- ============================================================
 -- LIVE CHAT CLIENT (global via Cloudflare Worker + D1)
 -- ============================================================
@@ -1856,6 +1901,16 @@ local function gfx_disableHD()
 
     notify("🎮 4K HD Mode: OFF", "info")
 end
+
+-- Expose GFX biar bisa dipanggil dari toggle di Settings tab
+_G.VRILZ_GFX = {
+    enableFPS = gfx_enableFPS,
+    disableFPS = gfx_disableFPS,
+    enableHD = gfx_enableHD,
+    disableHD = gfx_disableHD,
+    isFPSOn = function() return GFX.FPSEnabled end,
+    isHDOn = function() return GFX.HDEnabled end,
+}
 
 -- ============================================================
 -- BUILD MAIN WINDOW
@@ -2794,8 +2849,63 @@ local function buildMainWindow(parent)
         end
     end)
 
-    -- Register tab ke sidebar dengan logo mahkota
+        -- Register tab AutoMain
     registerTab("AutoMain", "CROWN", "AUTO MAIN")
+
+    -- ============================================
+    -- TAB: ⚙ SETTINGS
+    -- ============================================
+    local settingsPage = createPage("Settings")
+    pages.Settings = settingsPage
+
+    local perfCard, perfContent = makeCard(settingsPage, "⚙ PERFORMANCE", 1)
+
+    makeToggle(perfContent, "FPS Boost (High FPS)", false, function(state)
+        _G.VRILZ_UI_Shared.FPSBoost_Enabled = state
+        if _G.VRILZ_GFX then
+            if state then
+                _G.VRILZ_GFX.enableFPS()
+                notify("✓ FPS Boost: ON", "success")
+            else
+                _G.VRILZ_GFX.disableFPS()
+                notify("✗ FPS Boost: OFF", "info")
+            end
+        end
+    end)
+
+    makeToggle(perfContent, "4K HD Mode (Sharp)", false, function(state)
+        _G.VRILZ_UI_Shared.HD4K_Enabled = state
+        if _G.VRILZ_GFX then
+            if state then
+                _G.VRILZ_GFX.enableHD()
+                notify("✓ 4K HD Mode: ON", "success")
+            else
+                _G.VRILZ_GFX.disableHD()
+                notify("✗ 4K HD Mode: OFF", "info")
+            end
+        end
+    end)
+
+    makeToggle(perfContent, "Show FPS/Ping Window", false, function(state)
+        _G.VRILZ_UI_Shared.FPSWindow_Enabled = state
+        toggleFPSWindow(state, screenGui)
+        if state then
+            notify("✓ FPS Window: ON", "success")
+        else
+            notify("✗ FPS Window: OFF", "info")
+        end
+    end)
+
+    -- Register tab Settings
+    registerTab("Settings", "⚙", "SETTINGS")
+
+    -- Auto switch ke tab AutoMain pas pertama kali buka
+    task.defer(function()
+        task.wait(0.1)
+        if navs["AutoMain"] then
+            navs["AutoMain"].btn.MouseButton1Click:Fire()
+        end
+    end)
     -- Auto switch ke tab ini pas pertama kali buka
     task.defer(function()
         task.wait(0.1)
@@ -3853,8 +3963,9 @@ function UI.Init(sharedState)
         ["Flaming Egg"] = false, ["Mushroom Egg"] = false, ["Asteroid Egg"] = false,
         ["Giant Egg"] = false, ["Diamond Egg"] = false, ["Dragon Egg"] = false,
     }
-        Shared.FPSBoost_Enabled = false
+                Shared.FPSBoost_Enabled = false
     Shared.HD4K_Enabled = false
+    Shared.FPSWindow_Enabled = false
 
     -- Live Chat state
     Shared.LiveChat_Messages = {}
