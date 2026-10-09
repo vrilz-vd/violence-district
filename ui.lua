@@ -576,18 +576,84 @@ local function makeCard(parent, title, layoutOrder)
     dotCorner.Parent = dot
     registerTheme(dot, "Accent", "BackgroundColor3")
 
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -30, 1, 0)
-    titleLabel.Position = UDim2.fromOffset(26, 0)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = title
-    titleLabel.TextColor3 = C.Text
-    titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.TextSize = CFG.FONT_TITLE
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.ZIndex = 3
-    titleLabel.Parent = headerFrame
-    registerTheme(titleLabel, "Text", "TextColor3")
+        -- ============================================================
+    -- CARD TITLE — kalau judul mulai dengan "♕ " → render mahkota frame
+    -- ============================================================
+    local titleLabel
+
+    if title:sub(1, 3) == "♕ " then
+        -- Ambil judul tanpa "♕ "
+        local realTitle = title:sub(4)
+
+        -- Container mahkota
+        local cardCrownBox = Instance.new("Frame")
+        cardCrownBox.Name = "CardCrownBox"
+        cardCrownBox.Size = UDim2.fromOffset(14, 12)
+        cardCrownBox.Position = UDim2.fromOffset(12, (CFG.CARD_HEADER - 12) / 2)
+        cardCrownBox.BackgroundTransparency = 1
+        cardCrownBox.ZIndex = 3
+        cardCrownBox.Parent = headerFrame
+
+        -- Base mahkota
+        local cBase = Instance.new("Frame")
+        cBase.Name = "CrownBase"
+        cBase.Size = UDim2.fromOffset(14, 3)
+        cBase.Position = UDim2.fromOffset(0, 9)
+        cBase.BackgroundColor3 = C.Accent
+        cBase.BorderSizePixel = 0
+        cBase.ZIndex = 4
+        cBase.Parent = cardCrownBox
+        registerTheme(cBase, "Accent", "BackgroundColor3")
+        local cbc = Instance.new("UICorner")
+        cbc.CornerRadius = UDim.new(0, 1)
+        cbc.Parent = cBase
+
+        -- 3 puncak mahkota
+        for i, xPos in ipairs({1.5, 7, 12.5}) do
+            local peak = Instance.new("Frame")
+            peak.Name = "CrownPeak" .. i
+            peak.Size = UDim2.fromOffset(3, 7)
+            peak.AnchorPoint = Vector2.new(0.5, 1)
+            peak.Position = UDim2.fromOffset(xPos, 9)
+            peak.Rotation = 45
+            peak.BackgroundColor3 = C.Accent
+            peak.BorderSizePixel = 0
+            peak.ZIndex = 4
+            peak.Parent = cardCrownBox
+            registerTheme(peak, "Accent", "BackgroundColor3")
+            local pc = Instance.new("UICorner")
+            pc.CornerRadius = UDim.new(0, 1)
+            pc.Parent = peak
+        end
+
+        -- Judul text (geser ke kanan buat kasih ruang mahkota)
+        titleLabel = Instance.new("TextLabel")
+        titleLabel.Size = UDim2.new(1, -40, 1, 0)
+        titleLabel.Position = UDim2.fromOffset(32, 0)
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.Text = realTitle
+        titleLabel.TextColor3 = C.Text
+        titleLabel.Font = Enum.Font.GothamBold
+        titleLabel.TextSize = CFG.FONT_TITLE
+        titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        titleLabel.ZIndex = 3
+        titleLabel.Parent = headerFrame
+        registerTheme(titleLabel, "Text", "TextColor3")
+    else
+        -- Judul normal (tanpa ♕)
+        titleLabel = Instance.new("TextLabel")
+        titleLabel.Size = UDim2.new(1, -30, 1, 0)
+        titleLabel.Position = UDim2.fromOffset(26, 0)
+        titleLabel.BackgroundTransparency = 1
+        titleLabel.Text = title
+        titleLabel.TextColor3 = C.Text
+        titleLabel.Font = Enum.Font.GothamBold
+        titleLabel.TextSize = CFG.FONT_TITLE
+        titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        titleLabel.ZIndex = 3
+        titleLabel.Parent = headerFrame
+        registerTheme(titleLabel, "Text", "TextColor3")
+    end
 
     local content = Instance.new("Frame")
     content.Size = UDim2.new(1, 0, 0, 0)
