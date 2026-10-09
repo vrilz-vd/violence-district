@@ -1,5 +1,6 @@
 -- ============================================================
 -- VRILZHUB UI - ANIME DICE v1.0
+-- Loading screen + window effects preserved
 -- ============================================================
 
 local UI = {}
@@ -251,6 +252,7 @@ local function buildTitle()
     lbl.TextStrokeTransparency = 0.2
     lbl.Font = Enum.Font.GothamBlack
     lbl.TextSize = 15
+    lbl.TextWrapped = false
     lbl.Parent = bb
 
     if not titleLoopRunning then
@@ -273,7 +275,7 @@ local function buildTitle()
 end
 
 local function refreshTitle()
-    if Shared.ShowTitle then buildTitle() else removeTitle() end
+    if Shared and Shared.ShowTitle then buildTitle() else removeTitle() end
 end
 
 LocalPlayer.CharacterAdded:Connect(function()
@@ -630,6 +632,15 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
     container.Parent = anchorFrame
     registerTheme(container, "Surface3", "BackgroundColor3")
 
+    local dropGradient = Instance.new("UIGradient")
+    dropGradient.Rotation = 0
+    dropGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 35, 40)),
+        ColorSequenceKeypoint.new(0.5, C.Surface3),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 21, 25)),
+    })
+    dropGradient.Parent = container
+
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 9)
     corner.Parent = container
@@ -659,10 +670,12 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
     arrow.Size = UDim2.fromOffset(IS_MOBILE and 20 or 22, IS_MOBILE and 16 or 18)
     arrow.Position = UDim2.new(1, -(IS_MOBILE and 27 or 29), 0.5, -(IS_MOBILE and 8 or 9))
     arrow.BackgroundTransparency = 1
+    arrow.BorderSizePixel = 0
     arrow.ZIndex = 4
     arrow.Parent = container
 
     local chevronL = Instance.new("Frame")
+    chevronL.Name = "Left"
     chevronL.Size = UDim2.fromOffset(IS_MOBILE and 8 or 9, 2)
     chevronL.Position = UDim2.new(0.5, -(IS_MOBILE and 7 or 8), 0.5, -1)
     chevronL.BackgroundColor3 = C.Accent2
@@ -673,6 +686,7 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
     registerTheme(chevronL, "Accent2", "BackgroundColor3")
 
     local chevronR = Instance.new("Frame")
+    chevronR.Name = "Right"
     chevronR.Size = UDim2.fromOffset(IS_MOBILE and 8 or 9, 2)
     chevronR.Position = UDim2.new(0.5, 1, 0.5, -1)
     chevronR.BackgroundColor3 = C.Accent2
@@ -683,7 +697,8 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
     registerTheme(chevronR, "Accent2", "BackgroundColor3")
 
     local listFrame = Instance.new("ScrollingFrame")
-    listFrame.Size = UDim2.fromOffset(CFG.DROPDOWN_POPUP_W, 0)
+    local popupWidth = CFG.DROPDOWN_POPUP_W
+    listFrame.Size = UDim2.fromOffset(popupWidth, 0)
     listFrame.BackgroundColor3 = C.Surface2
     listFrame.BorderSizePixel = 0
     listFrame.ScrollBarThickness = 4
@@ -695,6 +710,29 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
     listFrame.Parent = _G.VRILZ_DropdownLayer
     registerTheme(listFrame, "Surface2", "BackgroundColor3")
 
+    local listShadow = Instance.new("Frame")
+    listShadow.Name = "DropdownShadow"
+    listShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+    listShadow.Position = UDim2.new(0.5, 0, 0.5, 6)
+    listShadow.Size = UDim2.new(1, 10, 1, 10)
+    listShadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    listShadow.BackgroundTransparency = 0.35
+    listShadow.BorderSizePixel = 0
+    listShadow.ZIndex = 2000
+    listShadow.Visible = false
+    listShadow.Parent = listFrame
+    local listShadowCorner = Instance.new("UICorner")
+    listShadowCorner.CornerRadius = UDim.new(0, 12)
+    listShadowCorner.Parent = listShadow
+
+    local listGradient = Instance.new("UIGradient")
+    listGradient.Rotation = 90
+    listGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 31, 36)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(12, 13, 16)),
+    })
+    listGradient.Parent = listFrame
+
     local listCorner = Instance.new("UICorner")
     listCorner.CornerRadius = UDim.new(0, 10)
     listCorner.Parent = listFrame
@@ -705,6 +743,28 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
     listStroke.Thickness = 2
     listStroke.Parent = listFrame
     registerTheme(listStroke, "Accent", "Color")
+
+    local listTopGlow = Instance.new("Frame")
+    listTopGlow.Size = UDim2.new(1, -18, 0, 2)
+    listTopGlow.Position = UDim2.fromOffset(9, 1)
+    listTopGlow.BackgroundColor3 = C.Accent2
+    listTopGlow.BackgroundTransparency = 0.08
+    listTopGlow.BorderSizePixel = 0
+    listTopGlow.ZIndex = 2003
+    listTopGlow.Parent = listFrame
+    local listTopCorner = Instance.new("UICorner")
+    listTopCorner.CornerRadius = UDim.new(1, 0)
+    listTopCorner.Parent = listTopGlow
+    registerTheme(listTopGlow, "Accent2", "BackgroundColor3")
+
+    local popupHighlight = Instance.new("Frame")
+    popupHighlight.Size = UDim2.new(1, -16, 0, 1)
+    popupHighlight.Position = UDim2.fromOffset(8, 4)
+    popupHighlight.BackgroundColor3 = Color3.new(1, 1, 1)
+    popupHighlight.BackgroundTransparency = 0.88
+    popupHighlight.BorderSizePixel = 0
+    popupHighlight.ZIndex = 2003
+    popupHighlight.Parent = listFrame
 
     local listLayout = Instance.new("UIListLayout")
     listLayout.Padding = UDim.new(0, 2)
@@ -730,7 +790,9 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
         task.delay(0.2, function()
             if not isOpen then listFrame.Visible = false end
         end)
-        if _G.VRILZ_DropdownCloseOverlay then _G.VRILZ_DropdownCloseOverlay.Visible = false end
+        if _G.VRILZ_DropdownCloseOverlay then
+            _G.VRILZ_DropdownCloseOverlay.Visible = false
+        end
         _G.VRILZ_DropdownActive = nil
     end
 
@@ -738,6 +800,7 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
         if _G.VRILZ_DropdownActive and _G.VRILZ_DropdownActive.close then
             _G.VRILZ_DropdownActive.close()
         end
+
         isOpen = true
         listFrame.Visible = true
         chevronL.Rotation = -45
@@ -755,6 +818,7 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
         local screenH = viewport.Y
         local spaceBelow = screenH - (containerAbsY + containerAbsH + 8)
         local realMaxH = math.min(maxH, math.max(spaceBelow, 90))
+
         local popupRight = math.min(screenW - 8, containerAbsX + containerAbsW)
         local popupLeft = math.max(8, popupRight - width)
         listFrame.Position = UDim2.fromOffset(popupLeft, containerAbsY + containerAbsH + 6)
@@ -763,9 +827,15 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
             Size = UDim2.fromOffset(width, realMaxH)
         }):Play()
 
-        if _G.VRILZ_DropdownCloseOverlay then _G.VRILZ_DropdownCloseOverlay.Visible = true end
+        if _G.VRILZ_DropdownCloseOverlay then
+            _G.VRILZ_DropdownCloseOverlay.Visible = true
+        end
 
-        _G.VRILZ_DropdownActive = { close = closeList, listFrame = listFrame, container = container }
+        _G.VRILZ_DropdownActive = {
+            close = closeList,
+            listFrame = listFrame,
+            container = container
+        }
     end
 
     container.InputBegan:Connect(function(i)
@@ -794,9 +864,29 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
         optCorner.CornerRadius = UDim.new(0, 8)
         optCorner.Parent = opt
 
+        local optStroke = Instance.new("UIStroke")
+        optStroke.Color = C.Accent
+        optStroke.Thickness = 1
+        optStroke.Transparency = 1
+        optStroke.Parent = opt
+
         if item == selectedValue then
             opt.BackgroundColor3 = C.Accent
+            optStroke.Transparency = 0.15
         end
+
+        opt.MouseEnter:Connect(function()
+            if item ~= selectedValue then
+                TweenService:Create(opt, TweenInfo.new(0.12), {BackgroundColor3 = C.Surface2}):Play()
+            end
+            TweenService:Create(optStroke, TweenInfo.new(0.12), {Transparency = item == selectedValue and 0.15 or 0.45}):Play()
+        end)
+        opt.MouseLeave:Connect(function()
+            if item ~= selectedValue then
+                TweenService:Create(opt, TweenInfo.new(0.12), {BackgroundColor3 = C.Surface3}):Play()
+            end
+            TweenService:Create(optStroke, TweenInfo.new(0.12), {Transparency = item == selectedValue and 0.15 or 1}):Play()
+        end)
 
         opt.MouseButton1Click:Connect(function()
             selectedValue = item
@@ -848,9 +938,11 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
     registerTheme(selectedLbl, "Text", "TextColor3")
 
     local arrow = Instance.new("Frame")
+    arrow.Name = "RarityChevron"
     arrow.Size = UDim2.fromOffset(IS_MOBILE and 20 or 22, IS_MOBILE and 16 or 18)
     arrow.Position = UDim2.new(1, -(IS_MOBILE and 27 or 29), 0.5, -(IS_MOBILE and 8 or 9))
     arrow.BackgroundTransparency = 1
+    arrow.BorderSizePixel = 0
     arrow.ZIndex = 4
     arrow.Parent = container
 
@@ -875,7 +967,8 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
     registerTheme(arrowR, "Accent", "BackgroundColor3")
 
     local listFrame = Instance.new("ScrollingFrame")
-    listFrame.Size = UDim2.fromOffset(CFG.DROPDOWN_POPUP_W, 0)
+    local popupWidth = CFG.DROPDOWN_POPUP_W
+    listFrame.Size = UDim2.fromOffset(popupWidth, 0)
     listFrame.BackgroundColor3 = C.Surface2
     listFrame.BorderSizePixel = 0
     listFrame.ScrollBarThickness = 4
@@ -887,6 +980,14 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
     listFrame.Parent = _G.VRILZ_DropdownLayer
     registerTheme(listFrame, "Surface2", "BackgroundColor3")
 
+    local listGradient = Instance.new("UIGradient")
+    listGradient.Rotation = 90
+    listGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 31, 36)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(12, 13, 16)),
+    })
+    listGradient.Parent = listFrame
+
     local listCorner = Instance.new("UICorner")
     listCorner.CornerRadius = UDim.new(0, 10)
     listCorner.Parent = listFrame
@@ -897,6 +998,30 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
     listStroke.Thickness = 2
     listStroke.Parent = listFrame
     registerTheme(listStroke, "Accent", "Color")
+
+    local listShadow = Instance.new("Frame")
+    listShadow.Name = "DropdownShadow"
+    listShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+    listShadow.Position = UDim2.new(0.5, 0, 0.5, 6)
+    listShadow.Size = UDim2.new(1, 10, 1, 10)
+    listShadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    listShadow.BackgroundTransparency = 0.35
+    listShadow.BorderSizePixel = 0
+    listShadow.ZIndex = 2000
+    listShadow.Visible = false
+    listShadow.Parent = listFrame
+    local listShadowCorner = Instance.new("UICorner")
+    listShadowCorner.CornerRadius = UDim.new(0, 12)
+    listShadowCorner.Parent = listShadow
+
+    local popupHighlight = Instance.new("Frame")
+    popupHighlight.Size = UDim2.new(1, -16, 0, 1)
+    popupHighlight.Position = UDim2.fromOffset(8, 4)
+    popupHighlight.BackgroundColor3 = Color3.new(1, 1, 1)
+    popupHighlight.BackgroundTransparency = 0.88
+    popupHighlight.BorderSizePixel = 0
+    popupHighlight.ZIndex = 2003
+    popupHighlight.Parent = listFrame
 
     local listLayout = Instance.new("UIListLayout")
     listLayout.Padding = UDim.new(0, 2)
@@ -920,9 +1045,13 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
         for _, r in ipairs(items) do
             if sharedTable[r] then table.insert(selected, r) end
         end
-        if #selected == 0 then selectedLbl.Text = "Select..."
-        elseif #selected <= 2 then selectedLbl.Text = table.concat(selected, ", ")
-        else selectedLbl.Text = #selected .. " selected" end
+        if #selected == 0 then
+            selectedLbl.Text = "Select..."
+        elseif #selected <= 2 then
+            selectedLbl.Text = table.concat(selected, ", ")
+        else
+            selectedLbl.Text = #selected .. " selected"
+        end
     end
 
     local function updateButtonVisual(item)
@@ -942,7 +1071,9 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
         task.delay(0.2, function()
             if not isOpen then listFrame.Visible = false end
         end)
-        if _G.VRILZ_DropdownCloseOverlay then _G.VRILZ_DropdownCloseOverlay.Visible = false end
+        if _G.VRILZ_DropdownCloseOverlay then
+            _G.VRILZ_DropdownCloseOverlay.Visible = false
+        end
         _G.VRILZ_DropdownActive = nil
     end
 
@@ -950,6 +1081,7 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
         if _G.VRILZ_DropdownActive and _G.VRILZ_DropdownActive.close then
             _G.VRILZ_DropdownActive.close()
         end
+
         isOpen = true
         listFrame.Visible = true
         arrowL.Rotation = -45
@@ -967,6 +1099,7 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
         local screenH = viewport.Y
         local spaceBelow = screenH - (containerAbsY + containerAbsH + 8)
         local realMaxH = math.min(maxH, math.max(spaceBelow, 90))
+
         local popupRight = math.min(screenW - 8, containerAbsX + containerAbsW)
         local popupLeft = math.max(8, popupRight - width)
         listFrame.Position = UDim2.fromOffset(popupLeft, containerAbsY + containerAbsH + 6)
@@ -975,9 +1108,15 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
             Size = UDim2.fromOffset(width, realMaxH)
         }):Play()
 
-        if _G.VRILZ_DropdownCloseOverlay then _G.VRILZ_DropdownCloseOverlay.Visible = true end
+        if _G.VRILZ_DropdownCloseOverlay then
+            _G.VRILZ_DropdownCloseOverlay.Visible = true
+        end
 
-        _G.VRILZ_DropdownActive = { close = closeList, listFrame = listFrame, container = container }
+        _G.VRILZ_DropdownActive = {
+            close = closeList,
+            listFrame = listFrame,
+            container = container
+        }
     end
 
     container.InputBegan:Connect(function(i)
@@ -1115,11 +1254,18 @@ end
 -- ============================================================
 -- LIVE CHAT CLIENT
 -- ============================================================
-_G.VRILZ_ChatClient = _G.VRILZ_ChatClient or { listeners = {}, lastTs = 0, polling = false }
+_G.VRILZ_ChatClient = _G.VRILZ_ChatClient or {
+    listeners = {},
+    lastTs = 0,
+    polling = false,
+}
 local ChatClient = _G.VRILZ_ChatClient
 
 local function getChatHttpRequest()
-    return (syn and syn.request) or (http and http.request) or (http_request) or (request)
+    return (syn and syn.request)
+        or (http and http.request)
+        or (http_request)
+        or (request)
 end
 
 local function chatHttpJSON(url, method, bodyTable)
@@ -1127,31 +1273,50 @@ local function chatHttpJSON(url, method, bodyTable)
     local ok, res = pcall(function()
         local req = getChatHttpRequest()
         if req then
-            local opts = { Url = url, Method = method, Headers = {["Content-Type"] = "application/json"} }
+            local opts = {
+                Url = url,
+                Method = method,
+                Headers = {["Content-Type"] = "application/json"},
+            }
             if bodyTable then opts.Body = HttpService:JSONEncode(bodyTable) end
             return req(opts)
         end
         if method == "POST" then
-            return { StatusCode = 200, Body = HttpService:PostAsync(url, HttpService:JSONEncode(bodyTable), Enum.HttpContentType.ApplicationJson) }
+            return {
+                StatusCode = 200,
+                Body = HttpService:PostAsync(url, HttpService:JSONEncode(bodyTable), Enum.HttpContentType.ApplicationJson)
+            }
+        else
+            return {StatusCode = 200, Body = HttpService:GetAsync(url)}
         end
-        return { StatusCode = 200, Body = HttpService:GetAsync(url) }
     end)
     if not ok or not res then return nil end
-    local okDecode, data = pcall(function() return HttpService:JSONDecode(res.Body or res.body or "") end)
+    local okDecode, data = pcall(function()
+        return HttpService:JSONDecode(res.Body or res.body or "")
+    end)
     if not okDecode then return nil end
     return data
 end
 
-function ChatClient.onMessage(cb) table.insert(ChatClient.listeners, cb) end
+function ChatClient.onMessage(cb)
+    table.insert(ChatClient.listeners, cb)
+end
 
 function ChatClient.send(text)
     if type(text) ~= "string" then return false, "invalid" end
     text = text:gsub("[\n\r]", " "):sub(1, 200)
     if text == "" then return false, "empty" end
-    local data = chatHttpJSON(KEY_SYSTEM_URL:gsub("/$", "") .. "/api/chat/send", "POST", {
-        userId = LocalPlayer.UserId, username = LocalPlayer.Name,
-        displayName = LocalPlayer.DisplayName, text = text,
-    })
+
+    local data = chatHttpJSON(
+        KEY_SYSTEM_URL:gsub("/$", "") .. "/api/chat/send",
+        "POST",
+        {
+            userId = LocalPlayer.UserId,
+            username = LocalPlayer.Name,
+            displayName = LocalPlayer.DisplayName,
+            text = text,
+        }
+    )
     if data and data.success then return true end
     return false, (data and data.message) or "network error"
 end
@@ -1160,19 +1325,25 @@ function ChatClient.pollOnce()
     local url = KEY_SYSTEM_URL:gsub("/$", "") .. "/api/chat/poll?since=" .. tostring(ChatClient.lastTs)
     local data = chatHttpJSON(url, "GET", nil)
     if not data or not data.success or type(data.messages) ~= "table" then return end
+
     for _, m in ipairs(data.messages) do
         local ts = tonumber(m.ts or 0)
         if ts > ChatClient.lastTs then ChatClient.lastTs = ts end
         local msg = {
-            userId = tonumber(m.i or 0), username = tostring(m.u or "?"),
-            displayName = tostring(m.d or m.u or "?"), text = tostring(m.t or ""),
-            time = os.date("%H:%M", math.floor(ts / 1000)), ts = ts,
+            userId = tonumber(m.i or 0),
+            username = tostring(m.u or "?"),
+            displayName = tostring(m.d or m.u or "?"),
+            text = tostring(m.t or ""),
+            time = os.date("%H:%M", math.floor(ts / 1000)),
+            ts = ts,
         }
         table.insert(Shared.LiveChat_Messages, msg)
         while #Shared.LiveChat_Messages > Shared.LiveChat_MaxMessages do
             table.remove(Shared.LiveChat_Messages, 1)
         end
-        for _, cb in ipairs(ChatClient.listeners) do task.spawn(cb, msg) end
+        for _, cb in ipairs(ChatClient.listeners) do
+            task.spawn(cb, msg)
+        end
     end
 end
 
@@ -1214,9 +1385,49 @@ local function buildMainWindow(parent)
     main.Parent = screenGui
     registerTheme(main, "BG", "BackgroundColor3")
 
+    local shadow = Instance.new("Frame")
+    shadow.Name = "WindowShadow"
+    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+    shadow.Position = UDim2.fromScale(0.5, 0.5)
+    shadow.Size = UDim2.new(1, 28, 1, 28)
+    shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.BackgroundTransparency = 0.38
+    shadow.BorderSizePixel = 0
+    shadow.ZIndex = 0
+    shadow.Parent = main
+    local shadowCorner = Instance.new("UICorner")
+    shadowCorner.CornerRadius = UDim.new(0, 24)
+    shadowCorner.Parent = shadow
+
+    local bevel = Instance.new("Frame")
+    bevel.Name = "WindowBevel"
+    bevel.Size = UDim2.new(1, -2, 1, -2)
+    bevel.Position = UDim2.fromOffset(1, 1)
+    bevel.BackgroundTransparency = 1
+    bevel.BorderSizePixel = 0
+    bevel.ZIndex = 1
+    bevel.Parent = main
+    local bevelCorner = Instance.new("UICorner")
+    bevelCorner.CornerRadius = UDim.new(0, 21)
+    bevelCorner.Parent = bevel
+    local bevelStroke = Instance.new("UIStroke")
+    bevelStroke.Color = Color3.fromRGB(255, 255, 255)
+    bevelStroke.Thickness = 1
+    bevelStroke.Transparency = 0.88
+    bevelStroke.Parent = bevel
+
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 18)
     corner.Parent = main
+
+    local gradient = Instance.new("UIGradient")
+    gradient.Rotation = 90
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(23, 24, 29)),
+        ColorSequenceKeypoint.new(0.45, C.BG),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(5, 6, 9)),
+    })
+    gradient.Parent = main
 
     local stroke = Instance.new("UIStroke")
     stroke.Color = C.Accent
@@ -1238,6 +1449,36 @@ local function buildMainWindow(parent)
     headerCorner.CornerRadius = UDim.new(0, 18)
     headerCorner.Parent = header
 
+    local headerGradient = Instance.new("UIGradient")
+    headerGradient.Rotation = 0
+    headerGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 35)),
+        ColorSequenceKeypoint.new(0.5, C.Surface),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(12, 13, 17)),
+    })
+    headerGradient.Parent = header
+
+    local headerGlow = Instance.new("Frame")
+    headerGlow.Size = UDim2.new(1, -24, 0, 2)
+    headerGlow.Position = UDim2.new(0, 12, 1, -2)
+    headerGlow.BackgroundColor3 = C.Accent
+    headerGlow.BackgroundTransparency = 0.15
+    headerGlow.BorderSizePixel = 0
+    headerGlow.ZIndex = 12
+    headerGlow.Parent = header
+    local headerGlowCorner = Instance.new("UICorner")
+    headerGlowCorner.CornerRadius = UDim.new(1, 0)
+    headerGlowCorner.Parent = headerGlow
+    registerTheme(headerGlow, "Accent", "BackgroundColor3")
+
+    local headerFix = Instance.new("Frame")
+    headerFix.Size = UDim2.new(1, 0, 0, 14)
+    headerFix.Position = UDim2.new(0, 0, 1, -14)
+    headerFix.BackgroundColor3 = C.Surface
+    headerFix.BorderSizePixel = 0
+    headerFix.ZIndex = 10
+    headerFix.Parent = header
+
     local logo = Instance.new("TextLabel")
     logo.Size = UDim2.fromOffset(IS_MOBILE and 30 or 36, IS_MOBILE and 30 or 36)
     logo.Position = UDim2.fromOffset(IS_MOBILE and 10 or 12, (CFG.HEADER_H - (IS_MOBILE and 30 or 36)) / 2)
@@ -1249,7 +1490,10 @@ local function buildMainWindow(parent)
     logo.ZIndex = 11
     logo.Parent = header
     registerTheme(logo, "Accent", "BackgroundColor3")
-    Instance.new("UICorner", logo).CornerRadius = UDim.new(0, 8)
+
+    local logoCorner = Instance.new("UICorner")
+    logoCorner.CornerRadius = UDim.new(0, 8)
+    logoCorner.Parent = logo
 
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(0, 300, 0, 20)
@@ -1277,9 +1521,83 @@ local function buildMainWindow(parent)
     subtitle.Parent = header
     registerTheme(subtitle, "Muted", "TextColor3")
 
+    -- PROFILE CHIP
+    local profile = Instance.new("Frame")
+    profile.Name = "PlayerProfile"
+    local headerGap = IS_MOBILE and 10 or 14
+    local closeW = IS_MOBILE and 28 or 32
+    local minW = IS_MOBILE and 28 or 32
+    local closeRight = IS_MOBILE and 8 or 10
+    local closeLeft = -(closeRight + closeW)
+    local minLeft = closeLeft - headerGap - minW
+    local profileRight = minLeft - headerGap
+
+    profile.Size = UDim2.fromOffset(IS_MOBILE and 126 or 168, IS_MOBILE and 34 or 38)
+    profile.AnchorPoint = Vector2.new(1, 0.5)
+    profile.Position = UDim2.new(1, profileRight, 0.5, 0)
+    profile.BackgroundColor3 = C.Surface2
+    profile.BorderSizePixel = 0
+    profile.ZIndex = 12
+    profile.Parent = header
+    registerTheme(profile, "Surface2", "BackgroundColor3")
+    local profileCorner = Instance.new("UICorner")
+    profileCorner.CornerRadius = UDim.new(1, 0)
+    profileCorner.Parent = profile
+    local profileStroke = Instance.new("UIStroke")
+    profileStroke.Color = C.Accent
+    profileStroke.Thickness = 1
+    profileStroke.Transparency = 0.45
+    profileStroke.Parent = profile
+    registerTheme(profileStroke, "Accent", "Color")
+
+    local profileAvatar = Instance.new("ImageLabel")
+    profileAvatar.Size = UDim2.fromOffset(IS_MOBILE and 27 or 31, IS_MOBILE and 27 or 31)
+    profileAvatar.Position = UDim2.fromOffset(4, 3.5)
+    profileAvatar.BackgroundColor3 = C.Surface3
+    profileAvatar.BorderSizePixel = 0
+    profileAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150"
+    profileAvatar.ZIndex = 13
+    profileAvatar.Parent = profile
+    local profileAvatarCorner = Instance.new("UICorner")
+    profileAvatarCorner.CornerRadius = UDim.new(1, 0)
+    profileAvatarCorner.Parent = profileAvatar
+    local profileAvatarStroke = Instance.new("UIStroke")
+    profileAvatarStroke.Color = C.Accent2
+    profileAvatarStroke.Thickness = 1
+    profileAvatarStroke.Parent = profileAvatar
+    registerTheme(profileAvatarStroke, "Accent2", "Color")
+
+    local profileName = Instance.new("TextLabel")
+    profileName.Size = UDim2.new(1, -(IS_MOBILE and 60 or 68), 0, 16)
+    profileName.Position = UDim2.fromOffset(IS_MOBILE and 37 or 43, 4)
+    profileName.BackgroundTransparency = 1
+    profileName.Text = LocalPlayer.DisplayName
+    profileName.TextColor3 = C.Text
+    profileName.Font = Enum.Font.GothamBold
+    profileName.TextSize = IS_MOBILE and 10 or 11
+    profileName.TextXAlignment = Enum.TextXAlignment.Left
+    profileName.TextTruncate = Enum.TextTruncate.AtEnd
+    profileName.ZIndex = 13
+    profileName.Parent = profile
+    registerTheme(profileName, "Text", "TextColor3")
+
+    local profileUser = Instance.new("TextLabel")
+    profileUser.Size = UDim2.new(1, -(IS_MOBILE and 60 or 68), 0, 12)
+    profileUser.Position = UDim2.fromOffset(IS_MOBILE and 37 or 43, 20)
+    profileUser.BackgroundTransparency = 1
+    profileUser.Text = "@" .. LocalPlayer.Name
+    profileUser.TextColor3 = C.Muted
+    profileUser.Font = Enum.Font.GothamSemibold
+    profileUser.TextSize = IS_MOBILE and 8 or 9
+    profileUser.TextXAlignment = Enum.TextXAlignment.Left
+    profileUser.TextTruncate = Enum.TextTruncate.AtEnd
+    profileUser.ZIndex = 13
+    profileUser.Parent = profile
+    registerTheme(profileUser, "Muted", "TextColor3")
+
     local minBtn = Instance.new("TextButton")
-    minBtn.Size = UDim2.fromOffset(IS_MOBILE and 28 or 32, IS_MOBILE and 28 or 32)
-    minBtn.Position = UDim2.new(1, -(IS_MOBILE and 74 or 84), 0.5, -(IS_MOBILE and 14 or 16))
+    minBtn.Size = UDim2.fromOffset(minW, IS_MOBILE and 28 or 32)
+    minBtn.Position = UDim2.new(1, minLeft, 0.5, -(IS_MOBILE and 14 or 16))
     minBtn.BackgroundColor3 = C.Surface3
     minBtn.Text = "-"
     minBtn.TextColor3 = C.Text
@@ -1290,11 +1608,13 @@ local function buildMainWindow(parent)
     minBtn.Parent = header
     registerTheme(minBtn, "Surface3", "BackgroundColor3")
     registerTheme(minBtn, "Text", "TextColor3")
-    Instance.new("UICorner", minBtn).CornerRadius = UDim.new(1, 0)
+    local minCorner = Instance.new("UICorner")
+    minCorner.CornerRadius = UDim.new(1, 0)
+    minCorner.Parent = minBtn
 
     local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.fromOffset(IS_MOBILE and 28 or 32, IS_MOBILE and 28 or 32)
-    closeBtn.Position = UDim2.new(1, -(IS_MOBILE and 38 or 44), 0.5, -(IS_MOBILE and 14 or 16))
+    closeBtn.Size = UDim2.fromOffset(closeW, IS_MOBILE and 28 or 32)
+    closeBtn.Position = UDim2.new(1, closeLeft, 0.5, -(IS_MOBILE and 14 or 16))
     closeBtn.BackgroundColor3 = C.Surface3
     closeBtn.Text = "x"
     closeBtn.TextColor3 = C.Text
@@ -1305,7 +1625,9 @@ local function buildMainWindow(parent)
     closeBtn.Parent = header
     registerTheme(closeBtn, "Surface3", "BackgroundColor3")
     registerTheme(closeBtn, "Text", "TextColor3")
-    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(1, 0)
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(1, 0)
+    closeCorner.Parent = closeBtn
 
     -- BODY
     local body = Instance.new("Frame")
@@ -1325,7 +1647,38 @@ local function buildMainWindow(parent)
     sidebar.ClipsDescendants = true
     sidebar.Parent = body
     registerTheme(sidebar, "Surface", "BackgroundColor3")
-    Instance.new("UICorner", sidebar).CornerRadius = UDim.new(0, 14)
+
+    local sidebarCorner = Instance.new("UICorner")
+    sidebarCorner.CornerRadius = UDim.new(0, 14)
+    sidebarCorner.Parent = sidebar
+
+    local sidebarGradient = Instance.new("UIGradient")
+    sidebarGradient.Rotation = 90
+    sidebarGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(24, 25, 30)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 11, 14)),
+    })
+    sidebarGradient.Parent = sidebar
+
+    local sidebarStroke = Instance.new("UIStroke")
+    sidebarStroke.Color = C.Accent
+    sidebarStroke.Thickness = 1
+    sidebarStroke.Transparency = 0.7
+    sidebarStroke.Parent = sidebar
+    registerTheme(sidebarStroke, "Accent", "Color")
+
+    local sidebarGlow = Instance.new("Frame")
+    sidebarGlow.Size = UDim2.new(1, -18, 0, 2)
+    sidebarGlow.Position = UDim2.fromOffset(9, 1)
+    sidebarGlow.BackgroundColor3 = C.Accent2
+    sidebarGlow.BackgroundTransparency = 0.1
+    sidebarGlow.BorderSizePixel = 0
+    sidebarGlow.ZIndex = 5
+    sidebarGlow.Parent = sidebar
+    local sidebarGlowCorner = Instance.new("UICorner")
+    sidebarGlowCorner.CornerRadius = UDim.new(1, 0)
+    sidebarGlowCorner.Parent = sidebarGlow
+    registerTheme(sidebarGlow, "Accent2", "BackgroundColor3")
 
     local sidebarScroll = Instance.new("ScrollingFrame")
     sidebarScroll.Size = UDim2.fromScale(1, 1)
@@ -1333,6 +1686,7 @@ local function buildMainWindow(parent)
     sidebarScroll.BorderSizePixel = 0
     sidebarScroll.ScrollBarThickness = 2
     sidebarScroll.ScrollBarImageColor3 = C.Accent
+    sidebarScroll.ScrollBarImageTransparency = 0.5
     sidebarScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
     sidebarScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
     sidebarScroll.ZIndex = 4
@@ -1345,8 +1699,8 @@ local function buildMainWindow(parent)
     sidebarLayout.Parent = sidebarScroll
 
     local sidebarPad = Instance.new("UIPadding")
-    sidebarPad.PaddingTop = UDim.new(0, 10)
-    sidebarPad.PaddingBottom = UDim.new(0, 10)
+    sidebarPad.PaddingTop = UDim.new(0, IS_MOBILE and 6 or 10)
+    sidebarPad.PaddingBottom = UDim.new(0, IS_MOBILE and 6 or 10)
     sidebarPad.PaddingLeft = UDim.new(0, 6)
     sidebarPad.PaddingRight = UDim.new(0, 6)
     sidebarPad.Parent = sidebarScroll
@@ -1367,26 +1721,197 @@ local function buildMainWindow(parent)
     local pageHolderPad = Instance.new("UIPadding")
     pageHolderPad.PaddingTop = UDim.new(0, 4)
     pageHolderPad.PaddingBottom = UDim.new(0, 40)
-    pageHolderPad.PaddingLeft = UDim.new(0, 10)
-    pageHolderPad.PaddingRight = UDim.new(0, 10)
+    pageHolderPad.PaddingLeft = UDim.new(0, IS_MOBILE and 6 or 10)
+    pageHolderPad.PaddingRight = UDim.new(0, IS_MOBILE and 6 or 10)
     pageHolderPad.Parent = pageHolder
 
-    -- OPEN BUTTON
+    if not IS_MOBILE then
+        local resizeHandle = Instance.new("TextButton")
+        resizeHandle.Size = UDim2.fromOffset(22, 22)
+        resizeHandle.Position = UDim2.new(1, -24, 1, -24)
+        resizeHandle.BackgroundTransparency = 1
+        resizeHandle.Text = "."
+        resizeHandle.TextColor3 = C.Accent
+        resizeHandle.TextSize = 17
+        resizeHandle.Font = Enum.Font.GothamBold
+        resizeHandle.AutoButtonColor = false
+        resizeHandle.ZIndex = 100
+        resizeHandle.Parent = main
+        registerTheme(resizeHandle, "Accent", "TextColor3")
+
+        local resizing = false
+        local resizeStart, startSize
+        resizeHandle.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                resizing = true
+                resizeStart = i.Position
+                startSize = main.Size
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(i)
+            if resizing and i.UserInputType == Enum.UserInputType.MouseMovement then
+                local delta = i.Position - resizeStart
+                local newX = math.clamp(startSize.X.Offset + delta.X, 600, 1200)
+                local newY = math.clamp(startSize.Y.Offset + delta.Y, 400, 800)
+                main.Size = UDim2.fromOffset(newX, newY)
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                resizing = false
+            end
+        end)
+    end
+
+    -- OPEN BUTTON (minimize)
     local openBtn = Instance.new("TextButton")
     openBtn.Size = UDim2.fromOffset(CFG.OPEN_BTN, CFG.OPEN_BTN)
     openBtn.Position = UDim2.fromOffset(20, 20)
     openBtn.BackgroundColor3 = C.Surface
-    openBtn.Text = "VH"
+    openBtn.Text = ""
     openBtn.TextColor3 = C.Accent
     openBtn.Font = Enum.Font.GothamBold
-    openBtn.TextSize = IS_MOBILE and 18 or 20
+    openBtn.TextSize = IS_MOBILE and 14 or 16
     openBtn.BorderSizePixel = 0
     openBtn.Visible = false
     openBtn.ZIndex = 400
     openBtn.Parent = screenGui
     registerTheme(openBtn, "Surface", "BackgroundColor3")
     registerTheme(openBtn, "Accent", "TextColor3")
-    Instance.new("UICorner", openBtn).CornerRadius = UDim.new(0, 16)
+
+    local openCorner = Instance.new("UICorner")
+    openCorner.CornerRadius = UDim.new(0, 16)
+    openCorner.Parent = openBtn
+
+    local openGradient = Instance.new("UIGradient")
+    openGradient.Rotation = 135
+    openGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 35, 40)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 11, 14)),
+    })
+    openGradient.Parent = openBtn
+
+    local openStroke = Instance.new("UIStroke")
+    openStroke.Color = C.Accent
+    openStroke.Thickness = 2
+    openStroke.Transparency = 0.3
+    openStroke.Parent = openBtn
+
+    local vhShadow = Instance.new("TextLabel")
+    vhShadow.Name = "VH3DShadow"
+    vhShadow.Size = UDim2.fromScale(1, 1)
+    vhShadow.Position = UDim2.fromOffset(2, 3)
+    vhShadow.BackgroundTransparency = 1
+    vhShadow.Text = "VH"
+    vhShadow.TextColor3 = Color3.fromRGB(0, 0, 0)
+    vhShadow.TextTransparency = 0.05
+    vhShadow.TextSize = IS_MOBILE and 22 or 26
+    vhShadow.Font = Enum.Font.GothamBlack
+    vhShadow.ZIndex = 401
+    vhShadow.Parent = openBtn
+
+    local vhDepth = Instance.new("TextLabel")
+    vhDepth.Name = "VH3DDepth"
+    vhDepth.Size = UDim2.fromScale(1, 1)
+    vhDepth.Position = UDim2.fromOffset(1, 1)
+    vhDepth.BackgroundTransparency = 1
+    vhDepth.Text = "VH"
+    vhDepth.TextColor3 = C.Accent
+    vhDepth.TextTransparency = 0
+    vhDepth.TextSize = IS_MOBILE and 22 or 26
+    vhDepth.Font = Enum.Font.GothamBlack
+    vhDepth.ZIndex = 402
+    vhDepth.Parent = openBtn
+    registerTheme(vhDepth, "Accent", "TextColor3")
+
+    local vhFace = Instance.new("TextLabel")
+    vhFace.Name = "VH3DFace"
+    vhFace.Size = UDim2.fromScale(1, 1)
+    vhFace.Position = UDim2.fromOffset(0, 0)
+    vhFace.BackgroundTransparency = 1
+    vhFace.Text = "VH"
+    vhFace.TextColor3 = Color3.fromRGB(255, 255, 255)
+    vhFace.TextSize = IS_MOBILE and 22 or 26
+    vhFace.Font = Enum.Font.GothamBlack
+    vhFace.TextStrokeColor3 = C.Accent
+    vhFace.TextStrokeTransparency = 0
+    vhFace.ZIndex = 403
+    vhFace.Parent = openBtn
+    registerTheme(vhFace, "Accent", "TextStrokeColor3")
+
+    local function playMinimizeLightning()
+        local holder = Instance.new("Frame")
+        holder.Name = "MinimizeLightning"
+        holder.Size = UDim2.fromScale(1, 1)
+        holder.BackgroundTransparency = 1
+        holder.ClipsDescendants = true
+        holder.ZIndex = 410
+        holder.Parent = openBtn
+
+        local segments = {
+            {0.46, 0.18, 18, -28},
+            {0.56, 0.39, 15, 24},
+            {0.48, 0.58, 16, -22},
+            {0.57, 0.77, 13, 26},
+        }
+
+        for _, seg in ipairs(segments) do
+            local bolt = Instance.new("Frame")
+            bolt.AnchorPoint = Vector2.new(0.5, 0.5)
+            bolt.Size = UDim2.fromOffset(2, seg[3])
+            bolt.Position = UDim2.fromScale(seg[1], seg[2])
+            bolt.Rotation = seg[4]
+            bolt.BackgroundColor3 = Color3.fromRGB(170, 220, 255)
+            bolt.BorderSizePixel = 0
+            bolt.ZIndex = 411
+            bolt.Parent = holder
+            local bc = Instance.new("UICorner")
+            bc.CornerRadius = UDim.new(1, 0)
+            bc.Parent = bolt
+        end
+
+        local flash = Instance.new("Frame")
+        flash.Size = UDim2.fromScale(1, 1)
+        flash.BackgroundColor3 = C.Accent
+        flash.BackgroundTransparency = 0.9
+        flash.BorderSizePixel = 0
+        flash.ZIndex = 410
+        flash.Parent = holder
+        local fc = Instance.new("UICorner")
+        fc.CornerRadius = UDim.new(0, 16)
+        fc.Parent = flash
+
+        task.spawn(function()
+            TweenService:Create(flash, TweenInfo.new(0.10), {BackgroundTransparency = 1}):Play()
+            for _, child in ipairs(holder:GetChildren()) do
+                if child:IsA("Frame") and child ~= flash then
+                    TweenService:Create(child, TweenInfo.new(0.16), {BackgroundTransparency = 1}):Play()
+                end
+            end
+            task.wait(0.18)
+            if holder then holder:Destroy() end
+        end)
+    end
+
+    local openDrag, openDS, openSP = false, nil, nil
+    openBtn.InputBegan:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            openDrag = true
+            openDS = i.Position
+            openSP = openBtn.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(i)
+        if openDrag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+            local d = i.Position - openDS
+            openBtn.Position = UDim2.new(openSP.X.Scale, openSP.X.Offset + d.X, openSP.Y.Scale, openSP.Y.Offset + d.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(i)
+        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+            openDrag = false
+        end
+    end)
 
     openBtn.MouseButton1Click:Connect(function()
         openBtn.Visible = false
@@ -1404,6 +1929,7 @@ local function buildMainWindow(parent)
         task.delay(0.3, function()
             main.Visible = false
             openBtn.Visible = true
+            playMinimizeLightning()
         end)
     end)
 
@@ -1414,6 +1940,7 @@ local function buildMainWindow(parent)
         task.delay(0.3, function()
             main.Visible = false
             openBtn.Visible = true
+            playMinimizeLightning()
         end)
     end)
 
@@ -1432,7 +1959,10 @@ local function buildMainWindow(parent)
         btn.ZIndex = 5
         btn.Parent = sidebarScroll
         registerTheme(btn, "Surface3", "BackgroundColor3")
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 11)
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 11)
+        corner.Parent = btn
 
         local tabStroke = Instance.new("UIStroke")
         tabStroke.Color = C.Accent
@@ -1442,7 +1972,13 @@ local function buildMainWindow(parent)
         registerTheme(tabStroke, "Accent", "Color")
 
         local ic = Instance.new("TextLabel")
-        ic.Size = UDim2.fromScale(1, 1)
+        if CFG.TAB_SHOW_LABEL then
+            ic.Size = UDim2.fromOffset(28, tabH)
+            ic.Position = UDim2.fromOffset(10, 0)
+        else
+            ic.Size = UDim2.fromScale(1, 1)
+            ic.Position = UDim2.fromOffset(0, 0)
+        end
         ic.BackgroundTransparency = 1
         ic.Text = icon
         ic.TextSize = CFG.TAB_ICON
@@ -1452,7 +1988,23 @@ local function buildMainWindow(parent)
         ic.Parent = btn
         registerTheme(ic, "Accent", "TextColor3")
 
-        navs[id] = {btn = btn, ic = ic}
+        if CFG.TAB_SHOW_LABEL then
+            local lbl = Instance.new("TextLabel")
+            lbl.Size = UDim2.new(1, -44, 1, 0)
+            lbl.Position = UDim2.fromOffset(42, 0)
+            lbl.BackgroundTransparency = 1
+            lbl.Text = label
+            lbl.TextColor3 = C.Muted
+            lbl.TextSize = CFG.FONT_LABEL
+            lbl.Font = Enum.Font.GothamSemibold
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
+            lbl.ZIndex = 6
+            lbl.Parent = btn
+            registerTheme(lbl, "Muted", "TextColor3")
+            navs[id] = {btn = btn, ic = ic, lbl = lbl}
+        else
+            navs[id] = {btn = btn, ic = ic, lbl = nil}
+        end
 
         local function switchTo()
             for n, p in pairs(pages) do
@@ -1464,10 +2016,18 @@ local function buildMainWindow(parent)
                     x.btn.BackgroundColor3 = C.Accent
                     x.btn.BackgroundTransparency = 0
                     x.ic.TextColor3 = Color3.new(1, 1, 1)
+                    if x.btn:FindFirstChildOfClass("UIStroke") then
+                        x.btn:FindFirstChildOfClass("UIStroke").Transparency = 0.15
+                    end
+                    if x.lbl then x.lbl.TextColor3 = Color3.new(1, 1, 1) end
                 else
                     x.btn.BackgroundColor3 = C.Surface3
                     x.btn.BackgroundTransparency = 0.5
                     x.ic.TextColor3 = C.Accent
+                    if x.btn:FindFirstChildOfClass("UIStroke") then
+                        x.btn:FindFirstChildOfClass("UIStroke").Transparency = 0.82
+                    end
+                    if x.lbl then x.lbl.TextColor3 = C.Muted end
                 end
             end
         end
@@ -1493,7 +2053,7 @@ local function buildMainWindow(parent)
         page.Parent = pageHolder
 
         local layout = Instance.new("UIListLayout")
-        layout.Padding = UDim.new(0, 12)
+        layout.Padding = UDim.new(0, IS_MOBILE and 8 or 12)
         layout.SortOrder = Enum.SortOrder.LayoutOrder
         layout.Parent = page
 
@@ -1507,27 +2067,45 @@ local function buildMainWindow(parent)
         return page
     end
 
-    -- TAB INFO
+    -- ================= TAB 1: INFO =================
     local infoPage = createPage("Info")
     pages.Info = infoPage
 
     local infoCard, infoContent = makeCard(infoPage, "ANIME DICE INFO", 1)
 
     local avRow = Instance.new("Frame")
-    avRow.Size = UDim2.new(1, 0, 0, 70)
+    avRow.Size = UDim2.new(1, 0, 0, IS_MOBILE and 60 or 70)
     avRow.BackgroundTransparency = 1
     avRow.LayoutOrder = 1
     avRow.Parent = infoContent
 
+    local avSz = IS_MOBILE and 50 or 60
+    local avatarGlow = Instance.new("Frame")
+    avatarGlow.Size = UDim2.fromOffset(avSz + 8, avSz + 8)
+    avatarGlow.Position = UDim2.fromOffset(-4, 1)
+    avatarGlow.BackgroundColor3 = C.Accent
+    avatarGlow.BackgroundTransparency = 0.84
+    avatarGlow.BorderSizePixel = 0
+    avatarGlow.ZIndex = 2
+    avatarGlow.Parent = avRow
+    local avatarGlowCorner = Instance.new("UICorner")
+    avatarGlowCorner.CornerRadius = UDim.new(1, 0)
+    avatarGlowCorner.Parent = avatarGlow
+    registerTheme(avatarGlow, "Accent", "BackgroundColor3")
+
     local avatar = Instance.new("ImageLabel")
-    avatar.Size = UDim2.fromOffset(60, 60)
+    avatar.Size = UDim2.fromOffset(avSz, avSz)
     avatar.Position = UDim2.fromOffset(0, 5)
     avatar.BackgroundColor3 = C.Surface3
     avatar.BorderSizePixel = 0
     avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150"
     avatar.ZIndex = 3
     avatar.Parent = avRow
-    Instance.new("UICorner", avatar).CornerRadius = UDim.new(1, 0)
+
+    local avCorner = Instance.new("UICorner")
+    avCorner.CornerRadius = UDim.new(1, 0)
+    avCorner.Parent = avatar
+
     local avStroke = Instance.new("UIStroke")
     avStroke.Color = C.Accent
     avStroke.Thickness = 2.5
@@ -1535,26 +2113,26 @@ local function buildMainWindow(parent)
     registerTheme(avStroke, "Accent", "Color")
 
     local nameLbl = Instance.new("TextLabel")
-    nameLbl.Size = UDim2.new(1, -75, 0, 22)
-    nameLbl.Position = UDim2.fromOffset(75, 12)
+    nameLbl.Size = UDim2.new(1, -(avSz + 15), 0, 22)
+    nameLbl.Position = UDim2.fromOffset(avSz + 15, IS_MOBILE and 10 or 12)
     nameLbl.BackgroundTransparency = 1
     nameLbl.Text = LocalPlayer.DisplayName
     nameLbl.TextColor3 = C.Text
     nameLbl.Font = Enum.Font.GothamBold
-    nameLbl.TextSize = 15
+    nameLbl.TextSize = IS_MOBILE and 13 or 15
     nameLbl.TextXAlignment = Enum.TextXAlignment.Left
     nameLbl.ZIndex = 3
     nameLbl.Parent = avRow
     registerTheme(nameLbl, "Text", "TextColor3")
 
     local userLbl = Instance.new("TextLabel")
-    userLbl.Size = UDim2.new(1, -75, 0, 16)
-    userLbl.Position = UDim2.fromOffset(75, 34)
+    userLbl.Size = UDim2.new(1, -(avSz + 15), 0, 16)
+    userLbl.Position = UDim2.fromOffset(avSz + 15, IS_MOBILE and 30 or 34)
     userLbl.BackgroundTransparency = 1
     userLbl.Text = "@" .. LocalPlayer.Name
     userLbl.TextColor3 = C.Muted
     userLbl.Font = Enum.Font.GothamSemibold
-    userLbl.TextSize = 11
+    userLbl.TextSize = IS_MOBILE and 10 or 11
     userLbl.TextXAlignment = Enum.TextXAlignment.Left
     userLbl.ZIndex = 3
     userLbl.Parent = avRow
@@ -1587,10 +2165,10 @@ local function buildMainWindow(parent)
     local updateCard, updateContent = makeCard(infoPage, "UPDATE INFORMATION", 2)
 
     local infoLines = {
-        "Version : 1.0.0",
-        "Game    : Anime Dice",
-        "Status  : Online",
-        "Features: Auto Roll, Auto Sell, Auto Claim",
+        "Version  : 1.0.0",
+        "Game     : Anime Dice",
+        "Status   : Online",
+        "Features : Auto Roll, Auto Sell, Auto Claim",
     }
     for i, line in ipairs(infoLines) do
         local lbl = Instance.new("TextLabel")
@@ -1631,11 +2209,23 @@ local function buildMainWindow(parent)
 
     registerTab("Info", "i", "Info")
 
-    -- TAB SETTINGS
+    -- ================= TAB 2: SETTINGS =================
     local setPage = createPage("Settings")
     pages.Settings = setPage
 
     local afkCard, afkContent = makeCard(setPage, "ANTI-AFK", 1)
+
+    local afkLbl = Instance.new("TextLabel")
+    afkLbl.Size = UDim2.new(1, 0, 0, 16)
+    afkLbl.BackgroundTransparency = 1
+    afkLbl.Text = "Prevent kick due to idling:"
+    afkLbl.TextColor3 = C.Muted
+    afkLbl.Font = Enum.Font.GothamSemibold
+    afkLbl.TextSize = CFG.FONT_MUTED
+    afkLbl.TextXAlignment = Enum.TextXAlignment.Left
+    afkLbl.ZIndex = 3
+    afkLbl.Parent = afkContent
+    registerTheme(afkLbl, "Muted", "TextColor3")
 
     makeToggle(afkContent, "Enable Anti-AFK", true, function(v)
         Shared.AntiAFK_Enabled = v
@@ -1671,6 +2261,147 @@ local function buildMainWindow(parent)
         else notify("Title: OFF", "info") end
     end)
 
+    local canCustom = false
+    pcall(function()
+        if LocalPlayer.UserId == OWNER_USERID then
+            canCustom = true
+        elseif Shared and Shared.KeyType then
+            local kt = tostring(Shared.KeyType):upper()
+            if kt == "PREMIUM" or kt == "OWNER" or kt == "VIP" then
+                canCustom = true
+            end
+        end
+    end)
+
+    if canCustom then
+        local customLbl = Instance.new("TextLabel")
+        customLbl.Size = UDim2.new(1, 0, 0, 16)
+        customLbl.BackgroundTransparency = 1
+        customLbl.Text = "Custom Title (max 15):"
+        customLbl.TextColor3 = C.Accent
+        customLbl.Font = Enum.Font.GothamBold
+        customLbl.TextSize = CFG.FONT_MUTED
+        customLbl.TextXAlignment = Enum.TextXAlignment.Left
+        customLbl.ZIndex = 3
+        customLbl.Parent = titleContent
+        registerTheme(customLbl, "Accent", "TextColor3")
+
+        local customBox = Instance.new("TextBox")
+        customBox.Size = UDim2.new(1, 0, 0, 34)
+        customBox.BackgroundColor3 = C.Surface3
+        customBox.BorderSizePixel = 0
+        customBox.Text = _G.VRILZ_CustomTitle or ""
+        customBox.PlaceholderText = "Enter Text"
+        customBox.PlaceholderColor3 = C.Muted
+        customBox.TextColor3 = C.Text
+        customBox.Font = Enum.Font.GothamBold
+        customBox.TextSize = CFG.FONT_LABEL
+        customBox.TextXAlignment = Enum.TextXAlignment.Center
+        customBox.ClearTextOnFocus = false
+        customBox.ZIndex = 3
+        customBox.Parent = titleContent
+        registerTheme(customBox, "Surface3", "BackgroundColor3")
+        registerTheme(customBox, "Text", "TextColor3")
+        Instance.new("UICorner", customBox).CornerRadius = UDim.new(0, 8)
+
+        local cbStroke = Instance.new("UIStroke")
+        cbStroke.Color = C.Accent
+        cbStroke.Thickness = 1.5
+        cbStroke.Transparency = 0.3
+        cbStroke.Parent = customBox
+        registerTheme(cbStroke, "Accent", "Color")
+
+        customBox:GetPropertyChangedSignal("Text"):Connect(function()
+            local current = customBox.Text
+            local upper = current:upper()
+            if #upper > 15 then upper = upper:sub(1, 15) end
+            upper = upper:gsub("[^%w%s]", "")
+            if current ~= upper then
+                local cursorPos = customBox.CursorPosition
+                customBox.Text = upper
+                customBox.CursorPosition = math.min(cursorPos, #upper + 1)
+            end
+        end)
+
+        local btnRow = Instance.new("Frame")
+        btnRow.Size = UDim2.new(1, 0, 0, 32)
+        btnRow.BackgroundTransparency = 1
+        btnRow.ZIndex = 3
+        btnRow.Parent = titleContent
+
+        local saveBtn = Instance.new("TextButton")
+        saveBtn.Size = UDim2.new(0.48, 0, 1, 0)
+        saveBtn.Position = UDim2.new(0, 0, 0, 0)
+        saveBtn.BackgroundColor3 = C.Success
+        saveBtn.Text = "SAVE"
+        saveBtn.TextColor3 = Color3.new(1, 1, 1)
+        saveBtn.Font = Enum.Font.GothamBold
+        saveBtn.TextSize = CFG.FONT_LABEL
+        saveBtn.BorderSizePixel = 0
+        saveBtn.ZIndex = 4
+        saveBtn.Parent = btnRow
+        registerTheme(saveBtn, "Success", "BackgroundColor3")
+        Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0, 8)
+
+        local clearBtn = Instance.new("TextButton")
+        clearBtn.Size = UDim2.new(0.48, 0, 1, 0)
+        clearBtn.Position = UDim2.new(0.52, 0, 0, 0)
+        clearBtn.BackgroundColor3 = C.Error
+        clearBtn.Text = "CLEAR"
+        clearBtn.TextColor3 = Color3.new(1, 1, 1)
+        clearBtn.Font = Enum.Font.GothamBold
+        clearBtn.TextSize = CFG.FONT_LABEL
+        clearBtn.BorderSizePixel = 0
+        clearBtn.ZIndex = 4
+        clearBtn.Parent = btnRow
+        registerTheme(clearBtn, "Error", "BackgroundColor3")
+        Instance.new("UICorner", clearBtn).CornerRadius = UDim.new(0, 8)
+
+        saveBtn.MouseButton1Click:Connect(function()
+            local txt = customBox.Text:gsub("^%s+", ""):gsub("%s+$", "")
+            if txt == "" then notify("Title kosong!", "error") return end
+            txt = txt:upper()
+            if #txt > 15 then txt = txt:sub(1, 15) end
+            txt = txt:gsub("[^%w%s]", "")
+            if txt == "" then notify("Cuma huruf & angka!", "error") return end
+            customBox.Text = txt
+            _G.VRILZ_CustomTitle = txt
+            saveCustomTitle(txt)
+            notify("Saved: " .. txt, "success")
+            if _G.VRILZ_RefreshTitle then _G.VRILZ_RefreshTitle() end
+        end)
+
+        clearBtn.MouseButton1Click:Connect(function()
+            customBox.Text = ""
+            clearCustomTitle()
+            notify("Title di-reset", "info")
+            if _G.VRILZ_RefreshTitle then _G.VRILZ_RefreshTitle() end
+        end)
+    else
+        local lockedFrame = Instance.new("Frame")
+        lockedFrame.Size = UDim2.new(1, 0, 0, 52)
+        lockedFrame.BackgroundColor3 = C.Surface3
+        lockedFrame.BackgroundTransparency = 0.5
+        lockedFrame.BorderSizePixel = 0
+        lockedFrame.ZIndex = 3
+        lockedFrame.Parent = titleContent
+        registerTheme(lockedFrame, "Surface3", "BackgroundColor3")
+        Instance.new("UICorner", lockedFrame).CornerRadius = UDim.new(0, 8)
+
+        local lockTitle = Instance.new("TextLabel")
+        lockTitle.Size = UDim2.new(1, -50, 0, 16)
+        lockTitle.Position = UDim2.fromOffset(42, 9)
+        lockTitle.BackgroundTransparency = 1
+        lockTitle.Text = "CUSTOM TITLE LOCKED"
+        lockTitle.TextColor3 = C.Muted
+        lockTitle.Font = Enum.Font.GothamBold
+        lockTitle.TextSize = CFG.FONT_MUTED
+        lockTitle.TextXAlignment = Enum.TextXAlignment.Left
+        lockTitle.ZIndex = 4
+        lockTitle.Parent = lockedFrame
+        registerTheme(lockTitle, "Muted", "TextColor3")
+    end
+
     local chatCard, chatContent = makeCard(setPage, "LIVE CHAT", 4)
 
     makeToggle(chatContent, "Show Live Chat Window", false, function(v)
@@ -1702,6 +2433,7 @@ local function buildMainWindow(parent)
     navs.Info.btn.BackgroundColor3 = C.Accent
     navs.Info.btn.BackgroundTransparency = 0
     navs.Info.ic.TextColor3 = Color3.new(1, 1, 1)
+    if navs.Info.lbl then navs.Info.lbl.TextColor3 = Color3.new(1, 1, 1) end
 
     -- DRAG WINDOW
     local dragging, dragInput, dragStart, startPos
@@ -1761,6 +2493,18 @@ local function buildLiveChatWindow(parent)
     win.Parent = parent
     registerTheme(win, "BG", "BackgroundColor3")
 
+    local shadow = Instance.new("Frame")
+    shadow.Size = UDim2.new(1, 20, 1, 20)
+    shadow.Position = UDim2.fromOffset(-10, -10)
+    shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.BackgroundTransparency = 0.5
+    shadow.BorderSizePixel = 0
+    shadow.ZIndex = 599
+    shadow.Parent = win
+    local shadowCorner = Instance.new("UICorner")
+    shadowCorner.CornerRadius = UDim.new(0, 20)
+    shadowCorner.Parent = shadow
+
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 16)
     corner.Parent = win
@@ -1771,6 +2515,14 @@ local function buildLiveChatWindow(parent)
     stroke.Transparency = 0.15
     stroke.Parent = win
     registerTheme(stroke, "Accent", "Color")
+
+    local gradient = Instance.new("UIGradient")
+    gradient.Rotation = 90
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(22, 23, 28)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 9, 12)),
+    })
+    gradient.Parent = win
 
     local headerH = 42
     local header = Instance.new("Frame")
@@ -1785,11 +2537,44 @@ local function buildLiveChatWindow(parent)
     headerCorner.CornerRadius = UDim.new(0, 16)
     headerCorner.Parent = header
 
+    local headerFix = Instance.new("Frame")
+    headerFix.Size = UDim2.new(1, 0, 0, 16)
+    headerFix.Position = UDim2.new(0, 0, 1, -16)
+    headerFix.BackgroundColor3 = C.Surface
+    headerFix.BorderSizePixel = 0
+    headerFix.ZIndex = 610
+    headerFix.Parent = header
+
+    local headerGlow = Instance.new("Frame")
+    headerGlow.Size = UDim2.new(1, -20, 0, 2)
+    headerGlow.Position = UDim2.new(0, 10, 1, -2)
+    headerGlow.BackgroundColor3 = C.Accent
+    headerGlow.BackgroundTransparency = 0.15
+    headerGlow.BorderSizePixel = 0
+    headerGlow.ZIndex = 612
+    headerGlow.Parent = header
+    local hgc = Instance.new("UICorner")
+    hgc.CornerRadius = UDim.new(1, 0)
+    hgc.Parent = headerGlow
+    registerTheme(headerGlow, "Accent", "BackgroundColor3")
+
+    local dot = Instance.new("Frame")
+    dot.Size = UDim2.fromOffset(10, 10)
+    dot.Position = UDim2.new(0, 12, 0.5, -5)
+    dot.BackgroundColor3 = C.Accent
+    dot.BorderSizePixel = 0
+    dot.ZIndex = 613
+    dot.Parent = header
+    local dotCorner = Instance.new("UICorner")
+    dotCorner.CornerRadius = UDim.new(1, 0)
+    dotCorner.Parent = dot
+    registerTheme(dot, "Accent", "BackgroundColor3")
+
     local titleLbl = Instance.new("TextLabel")
     titleLbl.Size = UDim2.new(1, -100, 1, 0)
     titleLbl.Position = UDim2.fromOffset(30, 0)
     titleLbl.BackgroundTransparency = 1
-    titleLbl.Text = "LIVE CHAT"
+    titleLbl.Text = "LIVE CHAT (GLOBAL)"
     titleLbl.TextColor3 = C.Text
     titleLbl.Font = Enum.Font.GothamBold
     titleLbl.TextSize = isMob and 12 or 13
@@ -1811,10 +2596,35 @@ local function buildLiveChatWindow(parent)
     closeBtn.Parent = header
     registerTheme(closeBtn, "Surface3", "BackgroundColor3")
     registerTheme(closeBtn, "Text", "TextColor3")
-    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(1, 0)
+    local closeCorner = Instance.new("UICorner")
+    closeCorner.CornerRadius = UDim.new(1, 0)
+    closeCorner.Parent = closeBtn
 
     closeBtn.MouseButton1Click:Connect(function()
         win.Visible = false
+    end)
+
+    local dragging, dragStart, startPos = false, nil, nil
+    header.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = win.Position
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            win.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
     end)
 
     local body = Instance.new("Frame")
@@ -1826,6 +2636,7 @@ local function buildLiveChatWindow(parent)
 
     local listFrame = Instance.new("ScrollingFrame")
     listFrame.Size = UDim2.new(1, 0, 1, -50)
+    listFrame.Position = UDim2.new(0, 0, 0, 0)
     listFrame.BackgroundColor3 = C.Surface2
     listFrame.BackgroundTransparency = 0.4
     listFrame.BorderSizePixel = 0
@@ -1840,6 +2651,13 @@ local function buildLiveChatWindow(parent)
     local lc = Instance.new("UICorner")
     lc.CornerRadius = UDim.new(0, 12)
     lc.Parent = listFrame
+
+    local ls = Instance.new("UIStroke")
+    ls.Color = C.Accent
+    ls.Thickness = 1
+    ls.Transparency = 0.65
+    ls.Parent = listFrame
+    registerTheme(ls, "Accent", "Color")
 
     local lp = Instance.new("UIPadding")
     lp.PaddingTop = UDim.new(0, 8)
@@ -1872,7 +2690,17 @@ local function buildLiveChatWindow(parent)
     inputBg.ZIndex = 606
     inputBg.Parent = body
     registerTheme(inputBg, "Surface3", "BackgroundColor3")
-    Instance.new("UICorner", inputBg).CornerRadius = UDim.new(0, 10)
+
+    local ic = Instance.new("UICorner")
+    ic.CornerRadius = UDim.new(0, 10)
+    ic.Parent = inputBg
+
+    local is = Instance.new("UIStroke")
+    is.Color = C.Accent
+    is.Thickness = 1
+    is.Transparency = 0.5
+    is.Parent = inputBg
+    registerTheme(is, "Accent", "Color")
 
     local box = Instance.new("TextBox")
     box.Size = UDim2.new(1, -76, 1, 0)
@@ -1903,7 +2731,10 @@ local function buildLiveChatWindow(parent)
     sendBtn.ZIndex = 607
     sendBtn.Parent = inputBg
     registerTheme(sendBtn, "Accent", "BackgroundColor3")
-    Instance.new("UICorner", sendBtn).CornerRadius = UDim.new(0, 8)
+
+    local sc = Instance.new("UICorner")
+    sc.CornerRadius = UDim.new(0, 8)
+    sc.Parent = sendBtn
 
     local msgCounter = 0
     local OWNER_IDS = { [5126297278] = true }
@@ -1934,11 +2765,19 @@ local function buildLiveChatWindow(parent)
         row.Parent = listFrame
         Instance.new("UICorner", row).CornerRadius = UDim.new(0, 10)
 
+        if isOwner then
+            local ownerStroke = Instance.new("UIStroke")
+            ownerStroke.Color = Color3.fromRGB(255, 200, 50)
+            ownerStroke.Thickness = 1.5
+            ownerStroke.Transparency = 0.2
+            ownerStroke.Parent = row
+        end
+
         local rp = Instance.new("UIPadding")
         rp.PaddingTop = UDim.new(0, 8)
         rp.PaddingBottom = UDim.new(0, 8)
-        rp.PaddingLeft = UDim.new(0, 10)
-        rp.PaddingRight = UDim.new(0, 10)
+        rp.PaddingLeft = UDim.new(0, isMob and 8 or 10)
+        rp.PaddingRight = UDim.new(0, isMob and 8 or 10)
         rp.Parent = row
 
         local avContainer = Instance.new("Frame")
@@ -1958,17 +2797,17 @@ local function buildLiveChatWindow(parent)
         avImg.Parent = avContainer
         Instance.new("UICorner", avImg).CornerRadius = UDim.new(1, 0)
 
-        local nameLbl = Instance.new("TextLabel")
-        nameLbl.Size = UDim2.new(1, -(avatarSize + avatarGap), 0, 18)
-        nameLbl.Position = UDim2.fromOffset(avatarSize + avatarGap, 0)
-        nameLbl.BackgroundTransparency = 1
-        nameLbl.Text = (isMe and "You" or msg.displayName)
-        nameLbl.TextColor3 = isOwner and Color3.fromRGB(255, 200, 50) or (isMe and C.Accent2 or C.Accent)
-        nameLbl.Font = Enum.Font.GothamBold
-        nameLbl.TextSize = 11
-        nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-        nameLbl.ZIndex = 609
-        nameLbl.Parent = row
+        local nameLbl2 = Instance.new("TextLabel")
+        nameLbl2.Size = UDim2.new(1, -(avatarSize + avatarGap), 0, 18)
+        nameLbl2.Position = UDim2.fromOffset(avatarSize + avatarGap, 0)
+        nameLbl2.BackgroundTransparency = 1
+        nameLbl2.Text = (isMe and "You" or msg.displayName)
+        nameLbl2.TextColor3 = isOwner and Color3.fromRGB(255, 200, 50) or (isMe and C.Accent2 or C.Accent)
+        nameLbl2.Font = Enum.Font.GothamBold
+        nameLbl2.TextSize = 11
+        nameLbl2.TextXAlignment = Enum.TextXAlignment.Left
+        nameLbl2.ZIndex = 609
+        nameLbl2.Parent = row
 
         local bodyLbl = Instance.new("TextLabel")
         bodyLbl.Size = UDim2.new(1, -(avatarSize + avatarGap), 0, 0)
@@ -2041,12 +2880,70 @@ local function buildLoadingScreen(parent)
     stroke1.Thickness = 3
     stroke1.Parent = loading
 
+    local topBar = Instance.new("Frame")
+    topBar.Size = UDim2.new(1, 0, 0, 4)
+    topBar.BackgroundColor3 = Color3.fromRGB(255, 30, 60)
+    topBar.BorderSizePixel = 0
+    topBar.ZIndex = 310
+    topBar.Parent = loading
+
+    local botBar = Instance.new("Frame")
+    botBar.Size = UDim2.new(1, 0, 0, 4)
+    botBar.Position = UDim2.new(0, 0, 1, -4)
+    botBar.BackgroundColor3 = Color3.fromRGB(255, 30, 60)
+    botBar.BorderSizePixel = 0
+    botBar.ZIndex = 310
+    botBar.Parent = loading
+
+    local noise = Instance.new("Frame")
+    noise.Size = UDim2.fromScale(1, 1)
+    noise.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    noise.BackgroundTransparency = 0.93
+    noise.BorderSizePixel = 0
+    noise.ZIndex = 319
+    noise.Parent = loading
+
     local vHolder = Instance.new("Frame")
     vHolder.Size = UDim2.fromScale(1, 0.55)
     vHolder.Position = UDim2.fromScale(0, 0.15)
     vHolder.BackgroundTransparency = 1
     vHolder.ZIndex = 305
     vHolder.Parent = loading
+
+    local vGlow = Instance.new("TextLabel")
+    vGlow.Size = UDim2.fromScale(1, 1)
+    vGlow.BackgroundTransparency = 1
+    vGlow.Text = "V"
+    vGlow.TextColor3 = Color3.fromRGB(255, 30, 60)
+    vGlow.TextTransparency = 0.3
+    vGlow.Font = Enum.Font.GothamBlack
+    vGlow.TextSize = 1
+    vGlow.ZIndex = 304
+    vGlow.Parent = vHolder
+
+    local vRed = Instance.new("TextLabel")
+    vRed.Size = UDim2.fromScale(1, 1)
+    vRed.Position = UDim2.fromOffset(-2, 0)
+    vRed.BackgroundTransparency = 1
+    vRed.Text = "V"
+    vRed.TextColor3 = Color3.fromRGB(255, 0, 0)
+    vRed.TextTransparency = 0.6
+    vRed.Font = Enum.Font.GothamBlack
+    vRed.TextSize = 1
+    vRed.ZIndex = 305
+    vRed.Parent = vHolder
+
+    local vBlue = Instance.new("TextLabel")
+    vBlue.Size = UDim2.fromScale(1, 1)
+    vBlue.Position = UDim2.fromOffset(2, 0)
+    vBlue.BackgroundTransparency = 1
+    vBlue.Text = "V"
+    vBlue.TextColor3 = Color3.fromRGB(0, 100, 255)
+    vBlue.TextTransparency = 0.6
+    vBlue.Font = Enum.Font.GothamBlack
+    vBlue.TextSize = 1
+    vBlue.ZIndex = 305
+    vBlue.Parent = vHolder
 
     local vLabel = Instance.new("TextLabel")
     vLabel.Size = UDim2.fromScale(1, 1)
@@ -2097,15 +2994,57 @@ local function buildLoadingScreen(parent)
     percentLbl.ZIndex = 306
     percentLbl.Parent = loading
 
+    local brandLbl = Instance.new("TextLabel")
+    brandLbl.Size = UDim2.new(1, -20, 0, 14)
+    brandLbl.Position = UDim2.new(0, 10, 0, winH - 26)
+    brandLbl.BackgroundTransparency = 1
+    brandLbl.Text = "V R I L Z H U B"
+    brandLbl.TextColor3 = Color3.fromRGB(150, 80, 100)
+    brandLbl.Font = Enum.Font.GothamBold
+    brandLbl.TextSize = 10
+    brandLbl.TextXAlignment = Enum.TextXAlignment.Left
+    brandLbl.ZIndex = 306
+    brandLbl.Parent = loading
+
+    task.spawn(function()
+        while loading.Parent do
+            task.wait(math.random(6, 15) / 100)
+            local offset = math.random(1, 6)
+            vRed.Position = UDim2.fromOffset(-offset, 0)
+            vBlue.Position = UDim2.fromOffset(offset, 0)
+            task.wait(0.05)
+            vRed.Position = UDim2.fromOffset(-1, 0)
+            vBlue.Position = UDim2.fromOffset(1, 0)
+        end
+    end)
+
+    task.spawn(function()
+        while loading.Parent do
+            task.wait(0.05)
+            noise.BackgroundTransparency = 0.88 + math.random() * 0.08
+        end
+    end)
+
+    task.spawn(function()
+        while loading.Parent do
+            task.wait(0.5)
+            TweenService:Create(vGlow, TweenInfo.new(0.5), {TextTransparency = 0.1}):Play()
+            task.wait(0.5)
+            TweenService:Create(vGlow, TweenInfo.new(0.5), {TextTransparency = 0.4}):Play()
+        end
+    end)
+
     task.spawn(function()
         local startSize = 1
         local endSize = IS_MOBILE and 130 or 170
-        local duration = 1.2
         for i = 1, 40 do
-            task.wait(duration / 40)
+            task.wait(1.2 / 40)
             local t = i / 40
             local eased = 1 - (1 - t) ^ 3
             vLabel.TextSize = startSize + (endSize - startSize) * eased
+            vGlow.TextSize = startSize + (endSize - startSize) * eased
+            vRed.TextSize = startSize + (endSize - startSize) * eased
+            vBlue.TextSize = startSize + (endSize - startSize) * eased
         end
     end)
 
@@ -2155,9 +3094,7 @@ local function buildLoadingScreen(parent)
 
         if loading then loading:Destroy() end
 
-        -- Build main window
         buildMainWindow(parent)
-        -- Build live chat window (hidden)
         local liveChatWin = buildLiveChatWindow(parent)
         _G.VRILZ_LiveChatWindow = liveChatWin
 
