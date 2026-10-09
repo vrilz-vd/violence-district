@@ -2503,27 +2503,38 @@ local function buildMainWindow(parent)
     end
 
         -- ============================================
-    -- TABS KOSONG — tambahin tab baru di sini
-    -- Contoh nanti buat Anime Dice:
+    -- TABS KOSONG — tambahin tab baru di sini nanti
+    -- Contoh buat Anime Dice:
     --   local animePage = createPage("AnimeDice")
     --   pages.AnimeDice = animePage
     --   local animeCard, animeContent = makeCard(animePage, "ANIME DICE", 1)
     --   registerTab("AnimeDice", "🎲", "Anime Dice")
     -- ============================================
-    -- Keep the Info tab independently scrollable all the way to the Discord copy button.
-    
-        local infoLayout = infoPage:FindFirstChildOfClass("UIListLayout")
-        if infoLayout then
-            infoPage.AutomaticCanvasSize = Enum.AutomaticSize.None
-            infoPage.ScrollingDirection = Enum.ScrollingDirection.Y
-            infoPage.ScrollingEnabled = true
-            local function syncInfoCanvas()
-                infoPage.CanvasSize = UDim2.new(0, 0, 0, infoLayout.AbsoluteContentSize.Y + 50)
+
+    -- Expose sistem tab biar bisa dipake dari luar
+    _G.VRILZ_UI = {
+        pages = pages,
+        navs = navs,
+        createPage = createPage,
+        makeCard = makeCard,
+        registerTab = registerTab,
+        toggle = makeToggle,
+        dropdown = makeDropdownGlobal,
+        dropdownMulti = makeDropdownMulti,
+        notify = notify,
+        switchTo = function(id)
+            for n, x in pairs(navs) do
+                if n == id then
+                    x.btn.MouseButton1Click:Fire()
+                    break
+                end
             end
-            infoLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(syncInfoCanvas)
-            task.defer(syncInfoCanvas)
-        end
-    end
+        end,
+        main = main,
+        body = body,
+        sidebarScroll = sidebarScroll,
+        pageHolder = pageHolder,
+    }
 
     -- Lightweight 3D egg preview used only by the prediction/info cards.
     -- It reads an existing rendered egg model when available and falls back to a simple 3D egg.
