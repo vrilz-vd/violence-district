@@ -1,6 +1,6 @@
 -- ============================================================
--- VRILZHUB UI - ANIME DICE v1.0
--- Loading screen + window effects preserved
+-- VRILZHUB UI — RIDE A PET v1.7 (AUTO-DETECT PC & MOBILE)
+-- PC: 800x580 | Mobile: 88% x 78% viewport
 -- ============================================================
 
 local UI = {}
@@ -12,13 +12,15 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
-
+-- Ambil Features dari _G (biar bisa akses fungsi Hatch Luck)
 local function getFeatures()
     return _G.VRILZ_Features
 end
 
+-- ====== AUTO-DETECT MOBILE ======
 local IS_MOBILE = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
+-- ====== UI CONFIG ======
 local UI_CONFIG = {
     MOBILE = {
         WIN_W_PCT = 0.92, WIN_H_PCT = 0.88,
@@ -29,6 +31,7 @@ local UI_CONFIG = {
         FONT_TITLE = 13, FONT_LABEL = 11, FONT_MUTED = 9, FONT_SMALL = 10,
         FONT_MED = 11, FONT_LARGE = 14,
         HEADER_H = 40, SEARCH_H = 30, NOTIF_W = 300, NOTIF_H = 52, OPEN_BTN = 52,
+        -- LIVE CHAT
         CHAT_MSG_H = 46, CHAT_AVATAR = 22, CHAT_FONT = 10, CHAT_NAME_FONT = 10,
         CHAT_INPUT_H = 34, CHAT_SEND_W = 46, CHAT_BUBBLE_PAD = 8,
         CHAT_MAX_MSG = 80, CHAT_SHOW_AVATAR = false, CHAT_PANEL_H = 340,
@@ -42,21 +45,50 @@ local UI_CONFIG = {
         FONT_TITLE = 12, FONT_LABEL = 12, FONT_MUTED = 10, FONT_SMALL = 10,
         FONT_MED = 12, FONT_LARGE = 15,
         HEADER_H = 52, SEARCH_H = 34, NOTIF_W = 380, NOTIF_H = 52, OPEN_BTN = 56,
+        -- LIVE CHAT
         CHAT_MSG_H = 54, CHAT_AVATAR = 30, CHAT_FONT = 12, CHAT_NAME_FONT = 11,
         CHAT_INPUT_H = 40, CHAT_SEND_W = 76, CHAT_BUBBLE_PAD = 12,
         CHAT_MAX_MSG = 200, CHAT_SHOW_AVATAR = true, CHAT_PANEL_H = 420,
     },
 }
 
+-- ====== KEY SYSTEM URL (dipindah ke atas biar ChatClient bisa akses) ======
 local KEY_SYSTEM_URL = "https://key-system.vrilzwops.workers.dev"
+
 local CFG = IS_MOBILE and UI_CONFIG.MOBILE or UI_CONFIG.PC
 
-local RarityList = {
-    "Common", "Uncommon", "Rare", "Epic", "Legendary",
-    "Mythical", "Divine", "Celestial", "Exotic",
-    "Secret I", "Secret II", "Exclusive"
+-- ====== EGG NAMES (WAJIB SAMA DENGAN NAMA DI GAME) ======
+local EggNames = {
+    "Cherub Egg", "Volcanic Egg", "Blackhole Egg", "Solaris Egg", "Galaxy Egg",
+    "Crystal Egg", "Golden Egg", "Glass Egg", "Skull Egg", "Sinister Egg",
+    "Soul Egg", "Dominus Egg", "Slime Egg", "Flower Egg", "Leaf Egg",
+    "Stone Egg", "Easter Egg", "Cracked Egg", "Ice Egg", "Tidal Egg",
+    "Bloom Egg", "Aurora Egg", "White Egg", "Brown Egg",
+    -- Tambahan dari GameData:
+    "Flaming Egg", "Mushroom Egg", "Asteroid Egg", "Giant Egg",
+    "Diamond Egg", "Dragon Egg"
 }
 
+-- ====== RARITY ======
+local RarityList = {
+    "None",
+    "Common", "Uncommon", "Rare", "Epic",
+    "Legendary", "Mythic", "Divine", "Ethereal", "Secret"
+}
+local RarityColors = {
+    None = Color3.fromRGB(150, 150, 155),
+    Common = Color3.fromRGB(150, 150, 155),
+    Uncommon = Color3.fromRGB(150, 150, 155),
+    Rare = Color3.fromRGB(150, 150, 155),
+    Epic = Color3.fromRGB(150, 150, 155),
+    Legendary = Color3.fromRGB(150, 150, 155),
+    Mythic = Color3.fromRGB(150, 150, 155),
+    Divine = Color3.fromRGB(150, 150, 155),
+    Ethereal = Color3.fromRGB(150, 150, 155),
+    Secret = Color3.fromRGB(150, 150, 155),
+}
+
+-- ====== THEME ======
 local Themes = {
     Brutal = {
         BG = Color3.fromRGB(7, 8, 11), Surface = Color3.fromRGB(13, 14, 18),
@@ -106,7 +138,7 @@ local Themes = {
         Accent2 = Color3.fromRGB(150, 200, 255), Accent3 = Color3.fromRGB(220, 235, 255),
         Success = Color3.fromRGB(50, 255, 150), Error = Color3.fromRGB(255, 50, 80),
     },
-    Mustard = {
+        Mustard = {
         BG = Color3.fromRGB(30, 25, 5), Surface = Color3.fromRGB(45, 38, 10),
         Surface2 = Color3.fromRGB(60, 50, 15), Surface3 = Color3.fromRGB(75, 62, 20),
         Stroke = Color3.fromRGB(230, 190, 50), Text = Color3.fromRGB(255, 250, 230),
@@ -142,24 +174,37 @@ local function applyTheme(themeName)
     end
 end
 
+
 -- ============================================================
--- TITLE SYSTEM
+-- TITLE SYSTEM v2 — OWNER + PREMIUM CUSTOM TITLE + SAVE
 -- ============================================================
 local OWNER_USERID = 5126297278
 local TITLE_GUI_NAME = "VRILZ_TitleTag"
 local titleGuiRef = nil
 local titleLoopRunning = false
+
+-- ═══════════════════════════════════════════
+-- SAVE/LOAD TITLE (pake writefile/readfile)
+-- ═══════════════════════════════════════════
 local TITLE_SAVE_FILE = "vrilz_title.txt"
 
 local function saveCustomTitle(title)
     if writefile then
-        pcall(function() writefile(TITLE_SAVE_FILE, title or "") end)
+        pcall(function()
+            writefile(TITLE_SAVE_FILE, title or "")
+        end)
     end
+    -- Simpen juga ke _G biar cepet akses
     _G.VRILZ_CustomTitle = title
 end
 
 local function loadCustomTitle()
-    if _G.VRILZ_CustomTitle then return _G.VRILZ_CustomTitle end
+    -- Cek _G dulu
+    if _G.VRILZ_CustomTitle then
+        return _G.VRILZ_CustomTitle
+    end
+    
+    -- Cek file
     if readfile and isfile then
         local ok, exists = pcall(isfile, TITLE_SAVE_FILE)
         if ok and exists then
@@ -173,6 +218,7 @@ local function loadCustomTitle()
             end
         end
     end
+    
     return nil
 end
 
@@ -180,42 +226,76 @@ local function clearCustomTitle()
     _G.VRILZ_CustomTitle = nil
     if delfile and isfile then
         local ok, exists = pcall(isfile, TITLE_SAVE_FILE)
-        if ok and exists then pcall(delfile, TITLE_SAVE_FILE) end
+        if ok and exists then
+            pcall(delfile, TITLE_SAVE_FILE)
+        end
     end
 end
 
+-- ═══════════════════════════════════════════
+-- CEK APAKAH USER BISA CUSTOM TITLE
+-- ═══════════════════════════════════════════
 local function canCustomTitle()
-    if LocalPlayer.UserId == OWNER_USERID then return true end
+    -- Owner = selalu bisa
+    if LocalPlayer.UserId == OWNER_USERID then
+        return true
+    end
+    
+    -- Cek key type = PREMIUM
     if Shared and Shared.KeyType then
         local kt = tostring(Shared.KeyType):upper()
-        if kt == "PREMIUM" or kt == "OWNER" or kt == "VIP" then return true end
+        if kt == "PREMIUM" or kt == "OWNER" or kt == "VIP" then
+            return true
+        end
     end
+    
     return false
 end
 
+-- ═══════════════════════════════════════════
+-- GET TITLE TEXT
+-- ═══════════════════════════════════════════
 local function getTitleText()
+    -- Owner
     if LocalPlayer.UserId == OWNER_USERID then
         local custom = _G.VRILZ_CustomTitle
-        if custom and custom ~= "" then return "[OWNER " .. custom .. "]" end
-        return "[OWNER]"
+        if custom and custom ~= "" then
+            return "[👑 " .. custom .. "]"
+        end
+        return "[👑 OWNER]"
     end
+    
+    -- Premium user — cek custom title
     if canCustomTitle() then
         local custom = _G.VRILZ_CustomTitle
-        if custom and custom ~= "" then return "[OWNER " .. custom .. "]" end
+        if custom and custom ~= "" then
+            return "[👑 " .. custom .. "]"
+        end
     end
+    
+    -- Default
     return "[VH COMMUNITY]"
 end
 
 local function getTitleColors()
+    -- Owner ATAU Premium = rainbow
     if LocalPlayer.UserId == OWNER_USERID or canCustomTitle() then
         return {
-            Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 127, 0),
-            Color3.fromRGB(255, 255, 0), Color3.fromRGB(0, 255, 0),
-            Color3.fromRGB(0, 255, 255), Color3.fromRGB(0, 0, 255),
-            Color3.fromRGB(139, 0, 255), Color3.fromRGB(255, 0, 255),
+            Color3.fromRGB(255, 0, 0),
+            Color3.fromRGB(255, 127, 0),
+            Color3.fromRGB(255, 255, 0),
+            Color3.fromRGB(0, 255, 0),
+            Color3.fromRGB(0, 255, 255),
+            Color3.fromRGB(0, 0, 255),
+            Color3.fromRGB(139, 0, 255),
+            Color3.fromRGB(255, 0, 255),
+        }
+    else
+        return {
+            Color3.fromRGB(255, 0, 0),
+            Color3.fromRGB(255, 255, 255),
         }
     end
-    return { Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 255, 255) }
 end
 
 local function removeTitle()
@@ -227,6 +307,7 @@ end
 
 local function buildTitle()
     removeTitle()
+
     local char = LocalPlayer.Character
     if not char then return end
     local head = char:FindFirstChild("Head")
@@ -252,20 +333,27 @@ local function buildTitle()
     lbl.TextStrokeTransparency = 0.2
     lbl.Font = Enum.Font.GothamBlack
     lbl.TextSize = 15
+    lbl.TextScaled = false
     lbl.TextWrapped = false
     lbl.Parent = bb
 
+    -- Animasi rainbow
     if not titleLoopRunning then
         titleLoopRunning = true
         task.spawn(function()
             local idx = 1
             while titleLoopRunning do
                 task.wait(0.12)
-                if not Shared.ShowTitle then idx = 1 continue end
+                if not Shared.ShowTitle then
+                    idx = 1
+                    continue
+                end
                 local colors = getTitleColors()
                 if titleGuiRef and titleGuiRef.Parent then
                     local label = titleGuiRef:FindFirstChild("TitleLabel")
-                    if label then label.TextColor3 = colors[idx] end
+                    if label then
+                        label.TextColor3 = colors[idx]
+                    end
                 end
                 idx = idx + 1
                 if idx > #colors then idx = 1 end
@@ -275,19 +363,23 @@ local function buildTitle()
 end
 
 local function refreshTitle()
-    if Shared and Shared.ShowTitle then buildTitle() else removeTitle() end
+    if Shared.ShowTitle then
+        buildTitle()
+    else
+        removeTitle()
+    end
 end
 
+-- Auto refresh pas karakter respawn
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(1)
     refreshTitle()
 end)
 
+-- Expose function biar UI bisa panggil
 _G.VRILZ_RefreshTitle = refreshTitle
 
--- ============================================================
--- NOTIFICATION
--- ============================================================
+-- ====== NOTIFICATION ======
 local NotifHolder = nil
 
 local function setupNotifHolder(parent)
@@ -312,8 +404,8 @@ local function notify(text, type)
     type = type or "info"
 
     local color, icon
-    if type == "success" then color = C.Success; icon = "v"
-    elseif type == "error" then color = C.Error; icon = "x"
+    if type == "success" then color = C.Success; icon = "✓"
+    elseif type == "error" then color = C.Error; icon = "✕"
     elseif type == "warning" then color = Color3.fromRGB(255, 200, 50); icon = "!"
     else color = C.Accent; icon = "i" end
 
@@ -389,9 +481,7 @@ local function notify(text, type)
     end)
 end
 
--- ============================================================
--- CARD
--- ============================================================
+-- ====== CARD (RIPPLE SAJA) ======
 local function makeCard(parent, title, layoutOrder)
     local card = Instance.new("Frame")
     card.Size = UDim2.new(1, 0, 0, 0)
@@ -404,6 +494,7 @@ local function makeCard(parent, title, layoutOrder)
     card.Parent = parent
     registerTheme(card, "Surface", "BackgroundColor3")
 
+    -- Layered card depth: soft shadow + glossy surface.
     local cardShadow = Instance.new("Frame")
     cardShadow.Name = "CardShadow"
     cardShadow.Size = UDim2.new(1, 8, 1, 10)
@@ -449,7 +540,8 @@ local function makeCard(parent, title, layoutOrder)
     stroke.Transparency = 0.22
     stroke.Parent = card
     registerTheme(stroke, "Accent", "Color")
-
+  
+    -- Header
     local headerFrame = Instance.new("Frame")
     headerFrame.Size = UDim2.new(1, 0, 0, CFG.CARD_HEADER)
     headerFrame.BackgroundColor3 = C.Surface2
@@ -520,9 +612,7 @@ local function makeCard(parent, title, layoutOrder)
     return card, content
 end
 
--- ============================================================
--- TOGGLE
--- ============================================================
+-- ====== TOGGLE ======
 local function makeToggle(parent, text, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 0, CFG.TOGGLE_H)
@@ -588,9 +678,7 @@ local function makeToggle(parent, text, default, callback)
     end)
 end
 
--- ============================================================
--- DROPDOWN GLOBAL
--- ============================================================
+-- ====== DROPDOWN GLOBAL ======
 _G.VRILZ_DropdownLayer = nil
 _G.VRILZ_DropdownCloseOverlay = nil
 _G.VRILZ_DropdownActive = nil
@@ -665,6 +753,8 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
     selectedLbl.Parent = container
     registerTheme(selectedLbl, "Text", "TextColor3")
 
+    -- Real chevron: draw the two strokes instead of using a glyph.
+    -- This guarantees the icon can never render as a square/tofu character.
     local arrow = Instance.new("Frame")
     arrow.Name = "DropdownChevron"
     arrow.Size = UDim2.fromOffset(IS_MOBILE and 20 or 22, IS_MOBILE and 16 or 18)
@@ -806,6 +896,7 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
         chevronL.Rotation = -45
         chevronR.Rotation = 45
 
+        -- Compact popover: jangan selebar field/window.
         local width = math.min(CFG.DROPDOWN_POPUP_W, math.max(140, container.AbsoluteSize.X - 12))
         listFrame.Size = UDim2.fromOffset(width, 0)
 
@@ -819,6 +910,7 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
         local spaceBelow = screenH - (containerAbsY + containerAbsH + 8)
         local realMaxH = math.min(maxH, math.max(spaceBelow, 90))
 
+        -- Tetap tepat di bawah dropdown, rata kanan dengan tombol <>.
         local popupRight = math.min(screenW - 8, containerAbsX + containerAbsW)
         local popupLeft = math.max(8, popupRight - width)
         listFrame.Position = UDim2.fromOffset(popupLeft, containerAbsY + containerAbsH + 6)
@@ -899,9 +991,7 @@ local function makeDropdownGlobal(anchorFrame, items, default, onSelect)
     return container
 end
 
--- ============================================================
--- DROPDOWN MULTI
--- ============================================================
+-- ====== DROPDOWN MULTI-SELECT (NONE LOGIC) ======
 local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, onChanged)
     local isOpen = false
 
@@ -937,6 +1027,7 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
     selectedLbl.Parent = container
     registerTheme(selectedLbl, "Text", "TextColor3")
 
+    -- Draw the rarity chevron from two small strokes so it never becomes a square/tofu glyph.
     local arrow = Instance.new("Frame")
     arrow.Name = "RarityChevron"
     arrow.Size = UDim2.fromOffset(IS_MOBILE and 20 or 22, IS_MOBILE and 16 or 18)
@@ -1046,11 +1137,13 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
             if sharedTable[r] then table.insert(selected, r) end
         end
         if #selected == 0 then
-            selectedLbl.Text = "Select..."
+            selectedLbl.Text = "Select Rarity..."
+        elseif #selected == 1 and selected[1] == "None" then
+            selectedLbl.Text = "None"
         elseif #selected <= 2 then
             selectedLbl.Text = table.concat(selected, ", ")
         else
-            selectedLbl.Text = #selected .. " selected"
+            selectedLbl.Text = #selected .. " rarity is selected"
         end
     end
 
@@ -1058,8 +1151,9 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
         local opt = optionButtons[item]
         if not opt then return end
         local on = sharedTable[item] == true
-        opt.chk.Text = on and "v" or "o"
+        opt.chk.Text = on and "✓" or "○"
         opt.bg.BackgroundColor3 = on and C.Surface2 or C.Surface3
+        opt.txt.TextColor3 = C.Text
     end
 
     local function closeList()
@@ -1087,6 +1181,7 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
         arrowL.Rotation = -45
         arrowR.Rotation = 45
 
+        -- Compact popover: jangan selebar field/window.
         local width = math.min(CFG.DROPDOWN_POPUP_W, math.max(140, container.AbsoluteSize.X - 12))
         listFrame.Size = UDim2.fromOffset(width, 0)
 
@@ -1100,6 +1195,7 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
         local spaceBelow = screenH - (containerAbsY + containerAbsH + 8)
         local realMaxH = math.min(maxH, math.max(spaceBelow, 90))
 
+        -- Tetap tepat di bawah dropdown, rata kanan dengan tombol <>.
         local popupRight = math.min(screenW - 8, containerAbsX + containerAbsW)
         local popupLeft = math.max(8, popupRight - width)
         listFrame.Position = UDim2.fromOffset(popupLeft, containerAbsY + containerAbsH + 6)
@@ -1145,7 +1241,7 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
         chk.Size = UDim2.fromOffset(24, itemHeight)
         chk.Position = UDim2.fromOffset(8, 0)
         chk.BackgroundTransparency = 1
-        chk.Text = sharedTable[item] and "v" or "o"
+        chk.Text = sharedTable[item] and "✓" or "○"
         chk.TextColor3 = C.Accent
         chk.Font = Enum.Font.GothamBold
         chk.TextSize = 14
@@ -1164,11 +1260,52 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
         txt.ZIndex = 2003
         txt.Parent = opt
 
+        if sharedTable[item] then
+            opt.BackgroundColor3 = C.Surface2
+            txt.TextColor3 = C.Text
+        end
+
         optionButtons[item] = {bg = opt, chk = chk, txt = txt}
 
         opt.MouseButton1Click:Connect(function()
-            sharedTable[item] = not sharedTable[item]
-            updateButtonVisual(item)
+            local isNone = (item == "None")
+
+            if isNone then
+                if sharedTable["None"] then
+                    local anyOther = false
+                    for _, r in ipairs(items) do
+                        if r ~= "None" and sharedTable[r] then anyOther = true break end
+                    end
+                    if not anyOther then return end
+                    sharedTable["None"] = false
+                    updateButtonVisual("None")
+                else
+                    for _, r in ipairs(items) do
+                        if r ~= "None" then sharedTable[r] = false end
+                    end
+                    sharedTable["None"] = true
+                    for _, r in ipairs(items) do updateButtonVisual(r) end
+                end
+            else
+                sharedTable[item] = not sharedTable[item]
+                if sharedTable[item] then
+                    if sharedTable["None"] then
+                        sharedTable["None"] = false
+                        updateButtonVisual("None")
+                    end
+                else
+                    local anyOn = false
+                    for _, r in ipairs(items) do
+                        if r ~= "None" and sharedTable[r] then anyOn = true break end
+                    end
+                    if not anyOn then
+                        sharedTable["None"] = true
+                        updateButtonVisual("None")
+                    end
+                end
+                updateButtonVisual(item)
+            end
+
             updateLabel()
             if onChanged then onChanged(sharedTable) end
         end)
@@ -1178,9 +1315,7 @@ local function makeDropdownMulti(anchorFrame, items, sharedTable, itemColors, on
     return container
 end
 
--- ============================================================
--- FPS WINDOW
--- ============================================================
+-- ====== FPS WINDOW ======
 local function buildFPSWindow(parent)
     local fpsWin = Instance.new("Frame")
     fpsWin.Name = "FPSWindow"
@@ -1252,7 +1387,7 @@ local function buildFPSWindow(parent)
 end
 
 -- ============================================================
--- LIVE CHAT CLIENT
+-- LIVE CHAT CLIENT (global via Cloudflare Worker + D1)
 -- ============================================================
 _G.VRILZ_ChatClient = _G.VRILZ_ChatClient or {
     listeners = {},
@@ -1359,6 +1494,304 @@ function ChatClient.start()
 end
 
 -- ============================================================
+-- 🎮 GRAPHICS ENGINE — FPS BOOST + 4K HD MODE
+-- ============================================================
+local GFX = {
+    FPSEnabled = false,
+    HDEnabled = false,
+    Original = {},
+    Created = {},
+    LoopThread = nil,
+    TextureBackup = {},
+    HiddenParts = {},
+}
+
+local function gfx_save(obj, prop)
+    local ok, val = pcall(function() return obj[prop] end)
+    if ok then table.insert(GFX.Original, {obj = obj, prop = prop, value = val}) end
+end
+
+local function gfx_restore()
+    for _, item in ipairs(GFX.Original) do
+        pcall(function() item.obj[item.prop] = item.value end)
+    end
+    GFX.Original = {}
+end
+
+local function gfx_add(inst)
+    table.insert(GFX.Created, inst)
+    return inst
+end
+
+local function gfx_cleanup()
+    for _, inst in ipairs(GFX.Created) do
+        pcall(function() if inst and inst.Parent then inst:Destroy() end end)
+    end
+    GFX.Created = {}
+end
+
+-- ===== FPS BOOST =====
+local function gfx_enableFPS()
+    if GFX.FPSEnabled then return end
+    GFX.FPSEnabled = true
+
+    pcall(function() Lighting.GlobalShadows = false end)
+    pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level01 end)
+
+    task.spawn(function()
+        local hidden = {}
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                local name = string.lower(obj.Name)
+                local parentName = obj.Parent and string.lower(obj.Parent.Name) or ""
+                local skip = false
+                if obj:FindFirstChildWhichIsA("Humanoid") then skip = true end
+                if name:find("egg") or name:find("nest") then skip = true end
+                if parentName:find("plot") or parentName:find("char") then skip = true end
+                if obj:FindFirstChildWhichIsA("ProximityPrompt") then skip = true end
+                if not skip then
+                    local isDeco = false
+                    if obj.Transparency >= 0.5 then isDeco = true end
+                    if name:find("tree") or name:find("rock") or name:find("bush") then isDeco = true end
+                    if name:find("grass") or name:find("flower") or name:find("cloud") then isDeco = true end
+                    if isDeco and obj.Size.Magnitude < 50 then
+                        obj.LocalTransparencyModifier = 1
+                        obj.CanCollide = false
+                        table.insert(hidden, obj)
+                    end
+                end
+            end
+        end
+        GFX.HiddenParts = hidden
+        notify("FPS Boost: " .. #hidden .. " Parts hidden", "info")
+    end)
+
+    notify("FPS Boost enabled", "success")
+end
+
+local function gfx_disableFPS()
+    if not GFX.FPSEnabled then return end
+    GFX.FPSEnabled = false
+
+    pcall(function() Lighting.GlobalShadows = true end)
+    pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level10 end)
+
+    for _, part in ipairs(GFX.HiddenParts) do
+        if part and part.Parent then
+            pcall(function()
+                part.LocalTransparencyModifier = 0
+                part.CanCollide = true
+            end)
+        end
+    end
+    GFX.HiddenParts = {}
+
+    notify("FPS Boost disabled", "info")
+end
+
+-- ===== 4K HD MODE =====
+local function gfx_enableHD()
+    if GFX.HDEnabled then return end
+    GFX.HDEnabled = true
+
+    -- Auto-disable FPS Boost
+    if GFX.FPSEnabled then
+        gfx_disableFPS()
+        notify("⚠️ FPS Boost dimatiin (bentrok sama 4K HD)", "warning")
+    end
+
+    -- Render
+    pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level10 end)
+    pcall(function() settings().Rendering.MeshPartDetailLevel = Enum.MeshPartDetailLevel.Level04 end)
+    pcall(function() settings().Rendering.AntiAliasing = Enum.AntiAliasingMode.MSAA_4x end)
+    pcall(function() settings().Rendering.EagerBulkExecution = false end)
+    pcall(function() workspace.StreamingTargetRadius = 1024 end)
+    pcall(function() workspace.StreamingMinRadius = 256 end)
+
+    -- Lighting
+    gfx_save(Lighting, "GlobalShadows")
+    gfx_save(Lighting, "EnvironmentDiffuseScale")
+    gfx_save(Lighting, "EnvironmentSpecularScale")
+    gfx_save(Lighting, "Ambient")
+    gfx_save(Lighting, "OutdoorAmbient")
+    gfx_save(Lighting, "Brightness")
+    gfx_save(Lighting, "ClockTime")
+    gfx_save(Lighting, "ExposureCompensation")
+    gfx_save(Lighting, "FogEnd")
+    gfx_save(Lighting, "FogStart")
+    gfx_save(Lighting, "ShadowSoftness")
+    pcall(function()
+        Lighting.GlobalShadows = true
+        Lighting.ShadowSoftness = 0.2
+        Lighting.EnvironmentDiffuseScale = 1
+        Lighting.EnvironmentSpecularScale = 1
+        Lighting.Brightness = 2.5
+        Lighting.ExposureCompensation = 0.3
+        Lighting.ClockTime = 14.5
+        Lighting.GeographicLatitude = 0
+        Lighting.Ambient = Color3.fromRGB(75, 78, 90)
+        Lighting.OutdoorAmbient = Color3.fromRGB(115, 120, 135)
+        Lighting.FogEnd = 100000
+        Lighting.FogStart = 0
+    end)
+    pcall(function()
+        gfx_save(Lighting, "Technology")
+        Lighting.Technology = Enum.Technology.Future
+    end)
+
+    -- Post FX
+    for _, name in ipairs({"VRILZ_HD_Bloom","VRILZ_HD_SunRays","VRILZ_HD_DOF",
+                            "VRILZ_HD_ColorCorrection","VRILZ_HD_Atmosphere","VRILZ_HD_Sky"}) do
+        local old = Lighting:FindFirstChild(name)
+        if old then old:Destroy() end
+    end
+
+    local bloom = Instance.new("BloomEffect")
+    bloom.Name = "VRILZ_HD_Bloom"
+    bloom.Intensity = 1.4
+    bloom.Size = 28
+    bloom.Threshold = 0.82
+    bloom.Parent = Lighting
+    gfx_add(bloom)
+
+    local sunRays = Instance.new("SunRaysEffect")
+    sunRays.Name = "VRILZ_HD_SunRays"
+    sunRays.Intensity = 0.18
+    sunRays.Spread = 0.95
+    sunRays.Parent = Lighting
+    gfx_add(sunRays)
+
+    local dof = Instance.new("DepthOfFieldEffect")
+    dof.Name = "VRILZ_HD_DOF"
+    dof.FarIntensity = 0.18
+    dof.FocusDistance = 38
+    dof.InFocusRadius = 28
+    dof.NearIntensity = 0.06
+    dof.Parent = Lighting
+    gfx_add(dof)
+
+    local cc = Instance.new("ColorCorrectionEffect")
+    cc.Name = "VRILZ_HD_ColorCorrection"
+    cc.Brightness = 0.03
+    cc.Contrast = 0.18
+    cc.Saturation = 0.15
+    cc.TintColor = Color3.fromRGB(255, 252, 246)
+    cc.Parent = Lighting
+    gfx_add(cc)
+
+    local atmo = Instance.new("Atmosphere")
+    atmo.Name = "VRILZ_HD_Atmosphere"
+    atmo.Density = 0.32
+    atmo.Offset = 0.15
+    atmo.Color = Color3.fromRGB(200, 202, 208)
+    atmo.Decay = Color3.fromRGB(108, 115, 128)
+    atmo.Glare = 0.18
+    atmo.Haze = 1.3
+    atmo.Parent = Lighting
+    gfx_add(atmo)
+
+    if not Lighting:FindFirstChildOfClass("Sky") then
+        local sky = Instance.new("Sky")
+        sky.Name = "VRILZ_HD_Sky"
+        sky.SkyboxBk = "rbxassetid://159454299"
+        sky.SkyboxDn = "rbxassetid://159454296"
+        sky.SkyboxFt = "rbxassetid://159454293"
+        sky.SkyboxLf = "rbxassetid://159454286"
+        sky.SkyboxRt = "rbxassetid://159454300"
+        sky.SkyboxUp = "rbxassetid://159454288"
+        sky.SunAngularSize = 22
+        sky.MoonAngularSize = 12
+        sky.StarCount = 3500
+        sky.Parent = Lighting
+        gfx_add(sky)
+    end
+
+    -- Terrain
+    pcall(function()
+        local terrain = workspace:FindFirstChildOfClass("Terrain")
+        if terrain then
+            gfx_save(terrain, "WaterWaveSize")
+            gfx_save(terrain, "WaterWaveSpeed")
+            gfx_save(terrain, "WaterReflectance")
+            gfx_save(terrain, "WaterTransparency")
+            terrain.WaterWaveSize = 0.18
+            terrain.WaterWaveSpeed = 12
+            terrain.WaterReflectance = 0.18
+            terrain.WaterTransparency = 0.08
+        end
+    end)
+
+    -- Materials
+    pcall(function()
+        local ms = game:GetService("MaterialService")
+        if ms then
+            gfx_save(ms, "Use2022Materials")
+            ms.Use2022Materials = true
+        end
+    end)
+
+    -- Texture sharpen
+    task.spawn(function()
+        local count = 0
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if count >= 800 then break end
+            if obj:IsA("Texture") then
+                pcall(function()
+                    table.insert(GFX.TextureBackup, {obj = obj, u = obj.StudsPerTileU, v = obj.StudsPerTileV})
+                    obj.StudsPerTileU = obj.StudsPerTileU * 0.6
+                    obj.StudsPerTileV = obj.StudsPerTileV * 0.6
+                end)
+                count = count + 1
+            elseif obj:IsA("Decal") or obj:IsA("SurfaceAppearance") then
+                count = count + 1
+            end
+        end
+    end)
+
+    -- Continuous re-apply
+    if not GFX.LoopThread then
+        GFX.LoopThread = task.spawn(function()
+            while GFX.HDEnabled do
+                task.wait(2)
+                pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level10 end)
+                pcall(function()
+                    Lighting.GlobalShadows = true
+                    Lighting.EnvironmentDiffuseScale = 1
+                    Lighting.EnvironmentSpecularScale = 1
+                end)
+                pcall(function() workspace.StreamingTargetRadius = 1024 end)
+            end
+        end)
+    end
+
+    notify("🎮 4K HD Mode: ON", "success")
+end
+
+local function gfx_disableHD()
+    if not GFX.HDEnabled then return end
+    GFX.HDEnabled = false
+    GFX.LoopThread = nil
+
+    gfx_cleanup()
+
+    for _, item in ipairs(GFX.TextureBackup) do
+        pcall(function()
+            if item.obj and item.obj.Parent then
+                item.obj.StudsPerTileU = item.u
+                item.obj.StudsPerTileV = item.v
+            end
+        end)
+    end
+    GFX.TextureBackup = {}
+
+    gfx_restore()
+
+    pcall(function() settings().Rendering.QualityLevel = Enum.QualityLevel.Level06 end)
+
+    notify("🎮 4K HD Mode: OFF", "info")
+end
+
+-- ============================================================
 -- BUILD MAIN WINDOW
 -- ============================================================
 local function buildMainWindow(parent)
@@ -1385,6 +1818,7 @@ local function buildMainWindow(parent)
     main.Parent = screenGui
     registerTheme(main, "BG", "BackgroundColor3")
 
+    -- Soft 3D shadow behind the window (visual only).
     local shadow = Instance.new("Frame")
     shadow.Name = "WindowShadow"
     shadow.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1512,7 +1946,7 @@ local function buildMainWindow(parent)
     subtitle.Size = UDim2.new(0, 300, 0, 14)
     subtitle.Position = UDim2.fromOffset(IS_MOBILE and 48 or 58, IS_MOBILE and 26 or 28)
     subtitle.BackgroundTransparency = 1
-    subtitle.Text = "Anime Dice v1.0.0"
+    subtitle.Text = "Ride a Pet · v1.7"
     subtitle.TextColor3 = C.Muted
     subtitle.Font = Enum.Font.GothamSemibold
     subtitle.TextSize = IS_MOBILE and 9 or 10
@@ -1521,7 +1955,7 @@ local function buildMainWindow(parent)
     subtitle.Parent = header
     registerTheme(subtitle, "Muted", "TextColor3")
 
-    -- PROFILE CHIP
+    -- PLAYER PROFILE CHIP
     local profile = Instance.new("Frame")
     profile.Name = "PlayerProfile"
     local headerGap = IS_MOBILE and 10 or 14
@@ -1552,7 +1986,7 @@ local function buildMainWindow(parent)
 
     local profileAvatar = Instance.new("ImageLabel")
     profileAvatar.Size = UDim2.fromOffset(IS_MOBILE and 27 or 31, IS_MOBILE and 27 or 31)
-    profileAvatar.Position = UDim2.fromOffset(4, 3.5)
+    profileAvatar.Position = UDim2.fromOffset(4, IS_MOBILE and 3.5 or 3.5)
     profileAvatar.BackgroundColor3 = C.Surface3
     profileAvatar.BorderSizePixel = 0
     profileAvatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150"
@@ -1599,7 +2033,7 @@ local function buildMainWindow(parent)
     minBtn.Size = UDim2.fromOffset(minW, IS_MOBILE and 28 or 32)
     minBtn.Position = UDim2.new(1, minLeft, 0.5, -(IS_MOBILE and 14 or 16))
     minBtn.BackgroundColor3 = C.Surface3
-    minBtn.Text = "-"
+    minBtn.Text = "−"
     minBtn.TextColor3 = C.Text
     minBtn.Font = Enum.Font.GothamBold
     minBtn.TextSize = IS_MOBILE and 18 or 20
@@ -1608,6 +2042,7 @@ local function buildMainWindow(parent)
     minBtn.Parent = header
     registerTheme(minBtn, "Surface3", "BackgroundColor3")
     registerTheme(minBtn, "Text", "TextColor3")
+
     local minCorner = Instance.new("UICorner")
     minCorner.CornerRadius = UDim.new(1, 0)
     minCorner.Parent = minBtn
@@ -1616,7 +2051,7 @@ local function buildMainWindow(parent)
     closeBtn.Size = UDim2.fromOffset(closeW, IS_MOBILE and 28 or 32)
     closeBtn.Position = UDim2.new(1, closeLeft, 0.5, -(IS_MOBILE and 14 or 16))
     closeBtn.BackgroundColor3 = C.Surface3
-    closeBtn.Text = "x"
+    closeBtn.Text = "×"
     closeBtn.TextColor3 = C.Text
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.TextSize = IS_MOBILE and 20 or 22
@@ -1625,6 +2060,7 @@ local function buildMainWindow(parent)
     closeBtn.Parent = header
     registerTheme(closeBtn, "Surface3", "BackgroundColor3")
     registerTheme(closeBtn, "Text", "TextColor3")
+
     local closeCorner = Instance.new("UICorner")
     closeCorner.CornerRadius = UDim.new(1, 0)
     closeCorner.Parent = closeBtn
@@ -1638,7 +2074,7 @@ local function buildMainWindow(parent)
     body.Parent = main
 
     local sidebarW = CFG.SIDEBAR_W
-
+    -- SIDEBAR CONTAINER
     local sidebar = Instance.new("Frame")
     sidebar.Size = UDim2.new(0, sidebarW, 1, 0)
     sidebar.BackgroundColor3 = C.Surface
@@ -1680,6 +2116,7 @@ local function buildMainWindow(parent)
     sidebarGlowCorner.Parent = sidebarGlow
     registerTheme(sidebarGlow, "Accent2", "BackgroundColor3")
 
+    -- SCROLLING FRAME DI DALAM SIDEBAR
     local sidebarScroll = Instance.new("ScrollingFrame")
     sidebarScroll.Size = UDim2.fromScale(1, 1)
     sidebarScroll.BackgroundTransparency = 1
@@ -1730,7 +2167,7 @@ local function buildMainWindow(parent)
         resizeHandle.Size = UDim2.fromOffset(22, 22)
         resizeHandle.Position = UDim2.new(1, -24, 1, -24)
         resizeHandle.BackgroundTransparency = 1
-        resizeHandle.Text = "."
+        resizeHandle.Text = "⌟"
         resizeHandle.TextColor3 = C.Accent
         resizeHandle.TextSize = 17
         resizeHandle.Font = Enum.Font.GothamBold
@@ -1763,7 +2200,7 @@ local function buildMainWindow(parent)
         end)
     end
 
-    -- OPEN BUTTON (minimize)
+    -- OPEN BUTTON
     local openBtn = Instance.new("TextButton")
     openBtn.Size = UDim2.fromOffset(CFG.OPEN_BTN, CFG.OPEN_BTN)
     openBtn.Position = UDim2.fromOffset(20, 20)
@@ -1797,6 +2234,7 @@ local function buildMainWindow(parent)
     openStroke.Transparency = 0.3
     openStroke.Parent = openBtn
 
+    -- MINIMIZE ICON ONLY: clearer VH + lightweight lightning effect
     local vhShadow = Instance.new("TextLabel")
     vhShadow.Name = "VH3DShadow"
     vhShadow.Size = UDim2.fromScale(1, 1)
@@ -1840,6 +2278,7 @@ local function buildMainWindow(parent)
     registerTheme(vhFace, "Accent", "TextStrokeColor3")
 
     local function playMinimizeLightning()
+        -- Lightweight visual strike: a few short UI segments, then cleanup.
         local holder = Instance.new("Frame")
         holder.Name = "MinimizeLightning"
         holder.Size = UDim2.fromScale(1, 1)
@@ -1938,9 +2377,7 @@ local function buildMainWindow(parent)
             Size = UDim2.fromOffset(0, 0)
         }):Play()
         task.delay(0.3, function()
-            main.Visible = false
-            openBtn.Visible = true
-            playMinimizeLightning()
+            screenGui:Destroy()
         end)
     end)
 
@@ -2006,27 +2443,25 @@ local function buildMainWindow(parent)
             navs[id] = {btn = btn, ic = ic, lbl = nil}
         end
 
-        local function switchTo()
+              local function switchTo()
             for n, p in pairs(pages) do
                 if p then p.Visible = false end
             end
-            if pages[id] then pages[id].Visible = true end
+            if pages[id] then
+                pages[id].Visible = true
+            end
             for n, x in pairs(navs) do
                 if n == id then
                     x.btn.BackgroundColor3 = C.Accent
                     x.btn.BackgroundTransparency = 0
                     x.ic.TextColor3 = Color3.new(1, 1, 1)
-                    if x.btn:FindFirstChildOfClass("UIStroke") then
-                        x.btn:FindFirstChildOfClass("UIStroke").Transparency = 0.15
-                    end
+                    if x.btn:FindFirstChildOfClass("UIStroke") then x.btn:FindFirstChildOfClass("UIStroke").Transparency = 0.15 end
                     if x.lbl then x.lbl.TextColor3 = Color3.new(1, 1, 1) end
                 else
                     x.btn.BackgroundColor3 = C.Surface3
                     x.btn.BackgroundTransparency = 0.5
                     x.ic.TextColor3 = C.Accent
-                    if x.btn:FindFirstChildOfClass("UIStroke") then
-                        x.btn:FindFirstChildOfClass("UIStroke").Transparency = 0.82
-                    end
+                    if x.btn:FindFirstChildOfClass("UIStroke") then x.btn:FindFirstChildOfClass("UIStroke").Transparency = 0.82 end
                     if x.lbl then x.lbl.TextColor3 = C.Muted end
                 end
             end
@@ -2051,12 +2486,12 @@ local function buildMainWindow(parent)
         page.Visible = false
         page.ZIndex = 7
         page.Parent = pageHolder
-
         local layout = Instance.new("UIListLayout")
         layout.Padding = UDim.new(0, IS_MOBILE and 8 or 12)
         layout.SortOrder = Enum.SortOrder.LayoutOrder
         layout.Parent = page
 
+        -- FIX: sync canvas otomatis tiap konten berubah
         layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             page.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 120)
         end)
@@ -2067,841 +2502,610 @@ local function buildMainWindow(parent)
         return page
     end
 
-    -- ================= TAB 1: INFO =================
-    local infoPage = createPage("Info")
-    pages.Info = infoPage
-
-    local infoCard, infoContent = makeCard(infoPage, "ANIME DICE INFO", 1)
-
-    local avRow = Instance.new("Frame")
-    avRow.Size = UDim2.new(1, 0, 0, IS_MOBILE and 60 or 70)
-    avRow.BackgroundTransparency = 1
-    avRow.LayoutOrder = 1
-    avRow.Parent = infoContent
-
-    local avSz = IS_MOBILE and 50 or 60
-    local avatarGlow = Instance.new("Frame")
-    avatarGlow.Size = UDim2.fromOffset(avSz + 8, avSz + 8)
-    avatarGlow.Position = UDim2.fromOffset(-4, 1)
-    avatarGlow.BackgroundColor3 = C.Accent
-    avatarGlow.BackgroundTransparency = 0.84
-    avatarGlow.BorderSizePixel = 0
-    avatarGlow.ZIndex = 2
-    avatarGlow.Parent = avRow
-    local avatarGlowCorner = Instance.new("UICorner")
-    avatarGlowCorner.CornerRadius = UDim.new(1, 0)
-    avatarGlowCorner.Parent = avatarGlow
-    registerTheme(avatarGlow, "Accent", "BackgroundColor3")
-
-    local avatar = Instance.new("ImageLabel")
-    avatar.Size = UDim2.fromOffset(avSz, avSz)
-    avatar.Position = UDim2.fromOffset(0, 5)
-    avatar.BackgroundColor3 = C.Surface3
-    avatar.BorderSizePixel = 0
-    avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150"
-    avatar.ZIndex = 3
-    avatar.Parent = avRow
-
-    local avCorner = Instance.new("UICorner")
-    avCorner.CornerRadius = UDim.new(1, 0)
-    avCorner.Parent = avatar
-
-    local avStroke = Instance.new("UIStroke")
-    avStroke.Color = C.Accent
-    avStroke.Thickness = 2.5
-    avStroke.Parent = avatar
-    registerTheme(avStroke, "Accent", "Color")
-
-    local nameLbl = Instance.new("TextLabel")
-    nameLbl.Size = UDim2.new(1, -(avSz + 15), 0, 22)
-    nameLbl.Position = UDim2.fromOffset(avSz + 15, IS_MOBILE and 10 or 12)
-    nameLbl.BackgroundTransparency = 1
-    nameLbl.Text = LocalPlayer.DisplayName
-    nameLbl.TextColor3 = C.Text
-    nameLbl.Font = Enum.Font.GothamBold
-    nameLbl.TextSize = IS_MOBILE and 13 or 15
-    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-    nameLbl.ZIndex = 3
-    nameLbl.Parent = avRow
-    registerTheme(nameLbl, "Text", "TextColor3")
-
-    local userLbl = Instance.new("TextLabel")
-    userLbl.Size = UDim2.new(1, -(avSz + 15), 0, 16)
-    userLbl.Position = UDim2.fromOffset(avSz + 15, IS_MOBILE and 30 or 34)
-    userLbl.BackgroundTransparency = 1
-    userLbl.Text = "@" .. LocalPlayer.Name
-    userLbl.TextColor3 = C.Muted
-    userLbl.Font = Enum.Font.GothamSemibold
-    userLbl.TextSize = IS_MOBILE and 10 or 11
-    userLbl.TextXAlignment = Enum.TextXAlignment.Left
-    userLbl.ZIndex = 3
-    userLbl.Parent = avRow
-    registerTheme(userLbl, "Muted", "TextColor3")
-
-    local sessionLbl = Instance.new("TextLabel")
-    sessionLbl.Size = UDim2.new(1, 0, 0, 20)
-    sessionLbl.BackgroundTransparency = 1
-    sessionLbl.Text = "Session: 00:00"
-    sessionLbl.TextColor3 = C.Accent2
-    sessionLbl.Font = Enum.Font.GothamBold
-    sessionLbl.TextSize = CFG.FONT_LABEL
-    sessionLbl.TextXAlignment = Enum.TextXAlignment.Left
-    sessionLbl.LayoutOrder = 2
-    sessionLbl.ZIndex = 3
-    sessionLbl.Parent = infoContent
-    registerTheme(sessionLbl, "Accent2", "TextColor3")
-
-    local sessionStart = os.clock()
-    task.spawn(function()
-        while sessionLbl.Parent do
-            task.wait(1)
-            local elapsed = math.floor(os.clock() - sessionStart)
-            local m = math.floor(elapsed / 60)
-            local s = elapsed % 60
-            sessionLbl.Text = string.format("Session: %02d:%02d", m, s)
-        end
-    end)
-
-    local updateCard, updateContent = makeCard(infoPage, "UPDATE INFORMATION", 2)
-
-    local infoLines = {
-        "Version  : 1.0.0",
-        "Game     : Anime Dice",
-        "Status   : Online",
-        "Features : Auto Roll, Auto Sell, Auto Claim",
-    }
-    for i, line in ipairs(infoLines) do
-        local lbl = Instance.new("TextLabel")
-        lbl.Size = UDim2.new(1, 0, 0, 14)
-        lbl.BackgroundTransparency = 1
-        lbl.Text = line
-        lbl.TextColor3 = C.Muted
-        lbl.Font = Enum.Font.GothamSemibold
-        lbl.TextSize = CFG.FONT_MUTED
-        lbl.TextXAlignment = Enum.TextXAlignment.Left
-        lbl.LayoutOrder = i
-        lbl.ZIndex = 3
-        lbl.Parent = updateContent
-        registerTheme(lbl, "Muted", "TextColor3")
-    end
-
-    local discordCard, discordContent = makeCard(infoPage, "JOIN DISCORD", 3)
-    local DISCORD_LINK = "https://discord.gg/psWhrYWbq"
-
-    local discordBtn = Instance.new("TextButton")
-    discordBtn.Size = UDim2.new(1, 0, 0, 32)
-    discordBtn.BackgroundColor3 = C.Accent
-    discordBtn.Text = "CLICK TO JOIN"
-    discordBtn.TextColor3 = Color3.new(1, 1, 1)
-    discordBtn.Font = Enum.Font.GothamBold
-    discordBtn.TextSize = CFG.FONT_LABEL
-    discordBtn.AutoButtonColor = false
-    discordBtn.LayoutOrder = 1
-    discordBtn.ZIndex = 3
-    discordBtn.Parent = discordContent
-    registerTheme(discordBtn, "Accent", "BackgroundColor3")
-    Instance.new("UICorner", discordBtn).CornerRadius = UDim.new(0, 8)
-
-    discordBtn.MouseButton1Click:Connect(function()
-        pcall(function() setclipboard(DISCORD_LINK) end)
-        notify("Discord link copied!", "success")
-    end)
-
-    registerTab("Info", "i", "Info")
-
-    -- ================= TAB AUTO =================
-    local autoPage = createPage("Auto")
-    pages.Auto = autoPage
-
-    -- CARD: AUTO ROLL
-    local rollCard, rollContent = makeCard(autoPage, "AUTO ROLL", 1)
-
-    makeToggle(rollContent, "Auto Roll", false, function(v)
-        Shared.AutoRoll_Enabled = v
-        if v then notify("Auto Roll: ON", "success")
-        else notify("Auto Roll: OFF", "info") end
-    end)
-
-    makeToggle(rollContent, "Auto Equip Best", false, function(v)
-        Shared.AutoEquipBest_Enabled = v
-        if v then notify("Auto Equip Best: ON", "success")
-        else notify("Auto Equip Best: OFF", "info") end
-    end)
-
-    -- CARD: AUTO CLAIM
-    local claimCard, claimContent = makeCard(autoPage, "AUTO CLAIM", 2)
-
-    makeToggle(claimContent, "Auto Claim (Daily/Quest/Offline)", false, function(v)
-        Shared.AutoClaim_Enabled = v
-        if v then notify("Auto Claim: ON", "success")
-        else notify("Auto Claim: OFF", "info") end
-    end)
-
-    -- CARD: AUTO TELEPORT SELL
-    local tpCard, tpContent = makeCard(autoPage, "AUTO TELEPORT", 3)
-
-    makeToggle(tpContent, "Auto Teleport ke Zona Sell", false, function(v)
-        Shared.AutoTeleportSell_Enabled = v
-        if v then notify("Auto TP Sell: ON", "success")
-        else notify("Auto TP Sell: OFF", "info") end
-    end)
-
-    registerTab("Auto", "A", "Auto")
-
-    -- ================= TAB 2: SETTINGS =================
+        -- ============================================
+    -- TABS KOSONG — tambahin tab baru di sini
+    -- Contoh nanti buat Anime Dice:
+    --   local animePage = createPage("AnimeDice")
+    --   pages.AnimeDice = animePage
+    --   local animeCard, animeContent = makeCard(animePage, "ANIME DICE", 1)
+    --   registerTab("AnimeDice", "🎲", "Anime Dice")
+    -- ============================================
+    -- Keep the Info tab independently scrollable all the way to the Discord copy button.
     
-    -- ================= TAB 2: SETTINGS =================
-    local setPage = createPage("Settings")
-    pages.Settings = setPage
-
-    local afkCard, afkContent = makeCard(setPage, "ANTI-AFK", 1)
-
-    local afkLbl = Instance.new("TextLabel")
-    afkLbl.Size = UDim2.new(1, 0, 0, 16)
-    afkLbl.BackgroundTransparency = 1
-    afkLbl.Text = "Prevent kick due to idling:"
-    afkLbl.TextColor3 = C.Muted
-    afkLbl.Font = Enum.Font.GothamSemibold
-    afkLbl.TextSize = CFG.FONT_MUTED
-    afkLbl.TextXAlignment = Enum.TextXAlignment.Left
-    afkLbl.ZIndex = 3
-    afkLbl.Parent = afkContent
-    registerTheme(afkLbl, "Muted", "TextColor3")
-
-    makeToggle(afkContent, "Enable Anti-AFK", true, function(v)
-        Shared.AntiAFK_Enabled = v
-        if v then notify("Anti-AFK: ON", "success")
-        else notify("Anti-AFK: OFF", "info") end
-    end)
-
-    local themeCard, themeContent = makeCard(setPage, "THEME", 2)
-
-    local themeLbl = Instance.new("TextLabel")
-    themeLbl.Size = UDim2.new(1, 0, 0, 16)
-    themeLbl.BackgroundTransparency = 1
-    themeLbl.Text = "Select Theme:"
-    themeLbl.TextColor3 = C.Muted
-    themeLbl.Font = Enum.Font.GothamSemibold
-    themeLbl.TextSize = CFG.FONT_MUTED
-    themeLbl.TextXAlignment = Enum.TextXAlignment.Left
-    themeLbl.ZIndex = 3
-    themeLbl.Parent = themeContent
-
-    local themeList = {"Brutal", "Ice", "Fire", "Pink", "Green", "Blue", "Mustard", "Olive"}
-    makeDropdownGlobal(themeContent, themeList, CurrentTheme, function(v)
-        applyTheme(v)
-        notify("Theme: " .. v, "success")
-    end)
-
-    local titleCard, titleContent = makeCard(setPage, "TITLE", 3)
-
-    makeToggle(titleContent, "Show Title", true, function(v)
-        Shared.ShowTitle = v
-        if _G.VRILZ_RefreshTitle then _G.VRILZ_RefreshTitle() end
-        if v then notify("Title: ON", "success")
-        else notify("Title: OFF", "info") end
-    end)
-
-    local canCustom = false
-    pcall(function()
-        if LocalPlayer.UserId == OWNER_USERID then
-            canCustom = true
-        elseif Shared and Shared.KeyType then
-            local kt = tostring(Shared.KeyType):upper()
-            if kt == "PREMIUM" or kt == "OWNER" or kt == "VIP" then
-                canCustom = true
+        local infoLayout = infoPage:FindFirstChildOfClass("UIListLayout")
+        if infoLayout then
+            infoPage.AutomaticCanvasSize = Enum.AutomaticSize.None
+            infoPage.ScrollingDirection = Enum.ScrollingDirection.Y
+            infoPage.ScrollingEnabled = true
+            local function syncInfoCanvas()
+                infoPage.CanvasSize = UDim2.new(0, 0, 0, infoLayout.AbsoluteContentSize.Y + 50)
             end
+            infoLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(syncInfoCanvas)
+            task.defer(syncInfoCanvas)
         end
-    end)
-
-    if canCustom then
-        local customLbl = Instance.new("TextLabel")
-        customLbl.Size = UDim2.new(1, 0, 0, 16)
-        customLbl.BackgroundTransparency = 1
-        customLbl.Text = "Custom Title (max 15):"
-        customLbl.TextColor3 = C.Accent
-        customLbl.Font = Enum.Font.GothamBold
-        customLbl.TextSize = CFG.FONT_MUTED
-        customLbl.TextXAlignment = Enum.TextXAlignment.Left
-        customLbl.ZIndex = 3
-        customLbl.Parent = titleContent
-        registerTheme(customLbl, "Accent", "TextColor3")
-
-        local customBox = Instance.new("TextBox")
-        customBox.Size = UDim2.new(1, 0, 0, 34)
-        customBox.BackgroundColor3 = C.Surface3
-        customBox.BorderSizePixel = 0
-        customBox.Text = _G.VRILZ_CustomTitle or ""
-        customBox.PlaceholderText = "Enter Text"
-        customBox.PlaceholderColor3 = C.Muted
-        customBox.TextColor3 = C.Text
-        customBox.Font = Enum.Font.GothamBold
-        customBox.TextSize = CFG.FONT_LABEL
-        customBox.TextXAlignment = Enum.TextXAlignment.Center
-        customBox.ClearTextOnFocus = false
-        customBox.ZIndex = 3
-        customBox.Parent = titleContent
-        registerTheme(customBox, "Surface3", "BackgroundColor3")
-        registerTheme(customBox, "Text", "TextColor3")
-        Instance.new("UICorner", customBox).CornerRadius = UDim.new(0, 8)
-
-        local cbStroke = Instance.new("UIStroke")
-        cbStroke.Color = C.Accent
-        cbStroke.Thickness = 1.5
-        cbStroke.Transparency = 0.3
-        cbStroke.Parent = customBox
-        registerTheme(cbStroke, "Accent", "Color")
-
-        customBox:GetPropertyChangedSignal("Text"):Connect(function()
-            local current = customBox.Text
-            local upper = current:upper()
-            if #upper > 15 then upper = upper:sub(1, 15) end
-            upper = upper:gsub("[^%w%s]", "")
-            if current ~= upper then
-                local cursorPos = customBox.CursorPosition
-                customBox.Text = upper
-                customBox.CursorPosition = math.min(cursorPos, #upper + 1)
-            end
-        end)
-
-        local btnRow = Instance.new("Frame")
-        btnRow.Size = UDim2.new(1, 0, 0, 32)
-        btnRow.BackgroundTransparency = 1
-        btnRow.ZIndex = 3
-        btnRow.Parent = titleContent
-
-        local saveBtn = Instance.new("TextButton")
-        saveBtn.Size = UDim2.new(0.48, 0, 1, 0)
-        saveBtn.Position = UDim2.new(0, 0, 0, 0)
-        saveBtn.BackgroundColor3 = C.Success
-        saveBtn.Text = "SAVE"
-        saveBtn.TextColor3 = Color3.new(1, 1, 1)
-        saveBtn.Font = Enum.Font.GothamBold
-        saveBtn.TextSize = CFG.FONT_LABEL
-        saveBtn.BorderSizePixel = 0
-        saveBtn.ZIndex = 4
-        saveBtn.Parent = btnRow
-        registerTheme(saveBtn, "Success", "BackgroundColor3")
-        Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0, 8)
-
-        local clearBtn = Instance.new("TextButton")
-        clearBtn.Size = UDim2.new(0.48, 0, 1, 0)
-        clearBtn.Position = UDim2.new(0.52, 0, 0, 0)
-        clearBtn.BackgroundColor3 = C.Error
-        clearBtn.Text = "CLEAR"
-        clearBtn.TextColor3 = Color3.new(1, 1, 1)
-        clearBtn.Font = Enum.Font.GothamBold
-        clearBtn.TextSize = CFG.FONT_LABEL
-        clearBtn.BorderSizePixel = 0
-        clearBtn.ZIndex = 4
-        clearBtn.Parent = btnRow
-        registerTheme(clearBtn, "Error", "BackgroundColor3")
-        Instance.new("UICorner", clearBtn).CornerRadius = UDim.new(0, 8)
-
-        saveBtn.MouseButton1Click:Connect(function()
-            local txt = customBox.Text:gsub("^%s+", ""):gsub("%s+$", "")
-            if txt == "" then notify("Title kosong!", "error") return end
-            txt = txt:upper()
-            if #txt > 15 then txt = txt:sub(1, 15) end
-            txt = txt:gsub("[^%w%s]", "")
-            if txt == "" then notify("Cuma huruf & angka!", "error") return end
-            customBox.Text = txt
-            _G.VRILZ_CustomTitle = txt
-            saveCustomTitle(txt)
-            notify("Saved: " .. txt, "success")
-            if _G.VRILZ_RefreshTitle then _G.VRILZ_RefreshTitle() end
-        end)
-
-        clearBtn.MouseButton1Click:Connect(function()
-            customBox.Text = ""
-            clearCustomTitle()
-            notify("Title di-reset", "info")
-            if _G.VRILZ_RefreshTitle then _G.VRILZ_RefreshTitle() end
-        end)
-    else
-        local lockedFrame = Instance.new("Frame")
-        lockedFrame.Size = UDim2.new(1, 0, 0, 52)
-        lockedFrame.BackgroundColor3 = C.Surface3
-        lockedFrame.BackgroundTransparency = 0.5
-        lockedFrame.BorderSizePixel = 0
-        lockedFrame.ZIndex = 3
-        lockedFrame.Parent = titleContent
-        registerTheme(lockedFrame, "Surface3", "BackgroundColor3")
-        Instance.new("UICorner", lockedFrame).CornerRadius = UDim.new(0, 8)
-
-        local lockTitle = Instance.new("TextLabel")
-        lockTitle.Size = UDim2.new(1, -50, 0, 16)
-        lockTitle.Position = UDim2.fromOffset(42, 9)
-        lockTitle.BackgroundTransparency = 1
-        lockTitle.Text = "CUSTOM TITLE LOCKED"
-        lockTitle.TextColor3 = C.Muted
-        lockTitle.Font = Enum.Font.GothamBold
-        lockTitle.TextSize = CFG.FONT_MUTED
-        lockTitle.TextXAlignment = Enum.TextXAlignment.Left
-        lockTitle.ZIndex = 4
-        lockTitle.Parent = lockedFrame
-        registerTheme(lockTitle, "Muted", "TextColor3")
     end
 
-    local chatCard, chatContent = makeCard(setPage, "LIVE CHAT", 4)
+    -- Lightweight 3D egg preview used only by the prediction/info cards.
+    -- It reads an existing rendered egg model when available and falls back to a simple 3D egg.
+    local function makeEggPreview(parent, eggName)
+        local viewport = Instance.new("ViewportFrame")
+        viewport.Name = "Egg3DPreview"
+        viewport.Size = UDim2.fromOffset(IS_MOBILE and 42 or 48, IS_MOBILE and 42 or 48)
+        viewport.BackgroundColor3 = C.Surface
+        viewport.BackgroundTransparency = 0.08
+        viewport.BorderSizePixel = 0
+        viewport.ZIndex = 5
+        viewport.Ambient = Color3.fromRGB(190, 200, 215)
+        viewport.LightColor = Color3.fromRGB(255, 255, 255)
+        viewport.LightDirection = Vector3.new(-1, -1, -1)
+        viewport.Parent = parent
 
-    makeToggle(chatContent, "Show Live Chat Window", false, function(v)
-        if _G.VRILZ_LiveChatWindow then
-            _G.VRILZ_LiveChatWindow.Visible = v
-            if v then
-                pcall(function()
-                    if ChatClient and ChatClient.start then ChatClient.start() end
-                end)
-                notify("Live Chat opened", "success")
-            else
-                notify("Live Chat closed", "info")
+        local vc = Instance.new("UICorner")
+        vc.CornerRadius = UDim.new(0, 12)
+        vc.Parent = viewport
+
+        local vs = Instance.new("UIStroke")
+        vs.Color = C.Accent
+        vs.Thickness = 1
+        vs.Transparency = 0.35
+        vs.Parent = viewport
+        registerTheme(vs, "Accent", "Color")
+
+        local world = Instance.new("WorldModel")
+        world.Parent = viewport
+
+        local camera = Instance.new("Camera")
+        camera.FieldOfView = 38
+        camera.Parent = viewport
+        viewport.CurrentCamera = camera
+
+        local source
+        local rendered = Workspace:FindFirstChild("RenderedEggs")
+        if rendered then
+            source = rendered:FindFirstChild(eggName)
+        end
+        if not source then
+            local ok, descendants = pcall(function() return Workspace:GetDescendants() end)
+            if ok then
+                for _, obj in ipairs(descendants) do
+                    if obj:IsA("Model") and obj.Name == eggName then
+                        source = obj
+                        break
+                    end
+                end
             end
         end
-    end)
 
-    local fpsCard, fpsContent = makeCard(setPage, "GRAPHICS", 5)
+        local model
+        if source and source:IsA("Model") then
+            local ok, clone = pcall(function() return source:Clone() end)
+            if ok and clone then model = clone end
+        end
 
-    local fpsWin = buildFPSWindow(screenGui)
-    UI._fpsWindow = fpsWin
+        if not model then
+            model = Instance.new("Model")
+            model.Name = eggName .. "_Preview"
+            local egg = Instance.new("Part")
+            egg.Name = "Egg"
+            egg.Shape = Enum.PartType.Ball
+            egg.Size = Vector3.new(2.2, 2.6, 2.2)
+            egg.Material = Enum.Material.SmoothPlastic
+            egg.Color = C.Surface3
+            egg.Anchored = true
+            egg.CanCollide = false
+            egg.Parent = model
+        end
 
-    makeToggle(fpsContent, "FPS Window", false, function(v)
-        if fpsWin then fpsWin.Visible = v end
-    end)
+        for _, obj in ipairs(model:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                obj.Anchored = true
+                obj.CanCollide = false
+                obj.CanTouch = false
+                obj.CanQuery = false
+            elseif obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
+                obj:Destroy()
+            end
+        end
+        model.Parent = world
 
-    registerTab("Settings", "S", "Settings")
+        local okBounds, boundsCFrame, boundsSize = pcall(function()
+            return model:GetBoundingBox()
+        end)
+        if not okBounds or boundsSize.Magnitude <= 0 then
+            boundsCFrame = CFrame.new()
+            boundsSize = Vector3.new(2, 2, 2)
+        end
 
-    pages.Info.Visible = true
-    navs.Info.btn.BackgroundColor3 = C.Accent
-    navs.Info.btn.BackgroundTransparency = 0
-    navs.Info.ic.TextColor3 = Color3.new(1, 1, 1)
-    if navs.Info.lbl then navs.Info.lbl.TextColor3 = Color3.new(1, 1, 1) end
+        pcall(function()
+            model:PivotTo(CFrame.new(-boundsCFrame.Position) * model:GetPivot())
+        end)
 
-    -- DRAG WINDOW
-    local dragging, dragInput, dragStart, startPos
-    header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            local mouseX = UserInputService:GetMouseLocation().X
-            if mouseX > (header.AbsolutePosition.X + header.AbsoluteSize.X - 90) then return end
-            dragging = true
-            dragStart = input.Position
-            startPos = main.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
+        local radius = math.max(boundsSize.X, boundsSize.Y, boundsSize.Z) * 0.72
+        local distance = math.max(4.5, radius / math.tan(math.rad(camera.FieldOfView / 2)))
+        camera.CFrame = CFrame.lookAt(Vector3.new(distance * 0.72, radius * 0.18, distance), Vector3.new(0, 0, 0))
+
+        return viewport
+    end
+
+        -- ============================================================
+    -- BUILD LIVE CHAT WINDOW (TERPISAH)
+    -- ============================================================
+    local function buildLiveChatWindow(screenGui)
+        print("[CHAT] buildLiveChatWindow START")
+
+        local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+        local isMob = IS_MOBILE
+
+        local winW = isMob and math.floor(viewport.X * 0.92) or math.min(520, math.floor(viewport.X * 0.55))
+        local winH = isMob and math.floor(viewport.Y * 0.7) or 520
+
+        -- ===== WINDOW UTAMA =====
+        local win = Instance.new("Frame")
+        win.Name = "LiveChatWindow"
+        win.AnchorPoint = Vector2.new(0.5, 0.5)
+        win.Position = UDim2.fromScale(0.5, 0.5)
+        win.Size = UDim2.fromOffset(winW, winH)
+        win.BackgroundColor3 = C.BG
+        win.BorderSizePixel = 0
+        win.Visible = false
+        win.ZIndex = 600
+        win.Parent = screenGui
+        registerTheme(win, "BG", "BackgroundColor3")
+
+        -- Shadow
+        local shadow = Instance.new("Frame")
+        shadow.Size = UDim2.new(1, 20, 1, 20)
+        shadow.Position = UDim2.fromOffset(-10, -10)
+        shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        shadow.BackgroundTransparency = 0.5
+        shadow.BorderSizePixel = 0
+        shadow.ZIndex = 599
+        shadow.Parent = win
+        local shadowCorner = Instance.new("UICorner")
+        shadowCorner.CornerRadius = UDim.new(0, 20)
+        shadowCorner.Parent = shadow
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 16)
+        corner.Parent = win
+
+        local stroke = Instance.new("UIStroke")
+        stroke.Color = C.Accent
+        stroke.Thickness = 2.2
+        stroke.Transparency = 0.15
+        stroke.Parent = win
+        registerTheme(stroke, "Accent", "Color")
+
+        local gradient = Instance.new("UIGradient")
+        gradient.Rotation = 90
+        gradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(22, 23, 28)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 9, 12)),
+        })
+        gradient.Parent = win
+
+        -- ===== HEADER =====
+        local headerH = 42
+        local header = Instance.new("Frame")
+        header.Size = UDim2.new(1, 0, 0, headerH)
+        header.BackgroundColor3 = C.Surface
+        header.BorderSizePixel = 0
+        header.ZIndex = 610
+        header.Parent = win
+        registerTheme(header, "Surface", "BackgroundColor3")
+
+        local headerCorner = Instance.new("UICorner")
+        headerCorner.CornerRadius = UDim.new(0, 16)
+        headerCorner.Parent = header
+
+        local headerFix = Instance.new("Frame")
+        headerFix.Size = UDim2.new(1, 0, 0, 16)
+        headerFix.Position = UDim2.new(0, 0, 1, -16)
+        headerFix.BackgroundColor3 = C.Surface
+        headerFix.BorderSizePixel = 0
+        headerFix.ZIndex = 610
+        headerFix.Parent = header
+
+        local headerGlow = Instance.new("Frame")
+        headerGlow.Size = UDim2.new(1, -20, 0, 2)
+        headerGlow.Position = UDim2.new(0, 10, 1, -2)
+        headerGlow.BackgroundColor3 = C.Accent
+        headerGlow.BackgroundTransparency = 0.15
+        headerGlow.BorderSizePixel = 0
+        headerGlow.ZIndex = 612
+        headerGlow.Parent = header
+        local hgc = Instance.new("UICorner")
+        hgc.CornerRadius = UDim.new(1, 0)
+        hgc.Parent = headerGlow
+        registerTheme(headerGlow, "Accent", "BackgroundColor3")
+
+        local dot = Instance.new("Frame")
+        dot.Size = UDim2.fromOffset(10, 10)
+        dot.Position = UDim2.new(0, 12, 0.5, -5)
+        dot.BackgroundColor3 = C.Accent
+        dot.BorderSizePixel = 0
+        dot.ZIndex = 613
+        dot.Parent = header
+        local dotCorner = Instance.new("UICorner")
+        dotCorner.CornerRadius = UDim.new(1, 0)
+        dotCorner.Parent = dot
+        registerTheme(dot, "Accent", "BackgroundColor3")
+
+        local titleLbl = Instance.new("TextLabel")
+        titleLbl.Size = UDim2.new(1, -100, 1, 0)
+        titleLbl.Position = UDim2.fromOffset(30, 0)
+        titleLbl.BackgroundTransparency = 1
+        titleLbl.Text = "💬 LIVE CHAT (GLOBAL)"
+        titleLbl.TextColor3 = C.Text
+        titleLbl.Font = Enum.Font.GothamBold
+        titleLbl.TextSize = isMob and 12 or 13
+        titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+        titleLbl.ZIndex = 613
+        titleLbl.Parent = header
+        registerTheme(titleLbl, "Text", "TextColor3")
+
+        local closeBtn = Instance.new("TextButton")
+        closeBtn.Size = UDim2.fromOffset(28, 28)
+        closeBtn.Position = UDim2.new(1, -36, 0.5, -14)
+        closeBtn.BackgroundColor3 = C.Surface3
+        closeBtn.Text = "×"
+        closeBtn.TextColor3 = C.Text
+        closeBtn.Font = Enum.Font.GothamBold
+        closeBtn.TextSize = 18
+        closeBtn.BorderSizePixel = 0
+        closeBtn.ZIndex = 613
+        closeBtn.Parent = header
+        registerTheme(closeBtn, "Surface3", "BackgroundColor3")
+        registerTheme(closeBtn, "Text", "TextColor3")
+        local closeCorner = Instance.new("UICorner")
+        closeCorner.CornerRadius = UDim.new(1, 0)
+        closeCorner.Parent = closeBtn
+
+        closeBtn.MouseButton1Click:Connect(function()
+            win.Visible = false
+        end)
+
+        -- Drag window via header
+        local dragging, dragStart, startPos = false, nil, nil
+        header.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                dragStart = input.Position
+                startPos = win.Position
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStart
+                win.Position = UDim2.new(
+                    startPos.X.Scale, startPos.X.Offset + delta.X,
+                    startPos.Y.Scale, startPos.Y.Offset + delta.Y
+                )
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+            end
+        end)
+
+        -- ===== BODY =====
+        local body = Instance.new("Frame")
+        body.Size = UDim2.new(1, -20, 1, -(headerH + 16))
+        body.Position = UDim2.new(0, 10, 0, headerH + 8)
+        body.BackgroundTransparency = 1
+        body.ZIndex = 605
+        body.Parent = win
+
+        -- List
+        local listFrame = Instance.new("ScrollingFrame")
+        listFrame.Size = UDim2.new(1, 0, 1, -50)
+        listFrame.Position = UDim2.new(0, 0, 0, 0)
+        listFrame.BackgroundColor3 = C.Surface2
+        listFrame.BackgroundTransparency = 0.4
+        listFrame.BorderSizePixel = 0
+        listFrame.ScrollBarThickness = 4
+        listFrame.ScrollBarImageColor3 = C.Accent
+        listFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+        listFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        listFrame.ZIndex = 606
+        listFrame.Parent = body
+        registerTheme(listFrame, "Surface2", "BackgroundColor3")
+
+        local lc = Instance.new("UICorner")
+        lc.CornerRadius = UDim.new(0, 12)
+        lc.Parent = listFrame
+
+        local ls = Instance.new("UIStroke")
+        ls.Color = C.Accent
+        ls.Thickness = 1
+        ls.Transparency = 0.65
+        ls.Parent = listFrame
+        registerTheme(ls, "Accent", "Color")
+
+        local lp = Instance.new("UIPadding")
+        lp.PaddingTop = UDim.new(0, 8)
+        lp.PaddingBottom = UDim.new(0, 8)
+        lp.PaddingLeft = UDim.new(0, 8)
+        lp.PaddingRight = UDim.new(0, 8)
+        lp.Parent = listFrame
+
+        local ll = Instance.new("UIListLayout")
+        ll.Padding = UDim.new(0, 6)
+        ll.SortOrder = Enum.SortOrder.LayoutOrder
+        ll.Parent = listFrame
+
+        local emptyLbl = Instance.new("TextLabel")
+        emptyLbl.Size = UDim2.new(1, 0, 0, 40)
+        emptyLbl.BackgroundTransparency = 1
+        emptyLbl.Text = "No messages yet... say hi! 👋"
+        emptyLbl.TextColor3 = C.Muted
+        emptyLbl.Font = Enum.Font.GothamSemibold
+        emptyLbl.TextSize = CFG.FONT_LABEL
+        emptyLbl.ZIndex = 607
+        emptyLbl.Parent = listFrame
+        registerTheme(emptyLbl, "Muted", "TextColor3")
+
+        -- Input
+        local inputBg = Instance.new("Frame")
+        inputBg.Size = UDim2.new(1, 0, 0, 42)
+        inputBg.Position = UDim2.new(0, 0, 1, -42)
+        inputBg.BackgroundColor3 = C.Surface3
+        inputBg.BorderSizePixel = 0
+        inputBg.ZIndex = 606
+        inputBg.Parent = body
+        registerTheme(inputBg, "Surface3", "BackgroundColor3")
+
+        local ic = Instance.new("UICorner")
+        ic.CornerRadius = UDim.new(0, 10)
+        ic.Parent = inputBg
+
+        local is = Instance.new("UIStroke")
+        is.Color = C.Accent
+        is.Thickness = 1
+        is.Transparency = 0.5
+        is.Parent = inputBg
+        registerTheme(is, "Accent", "Color")
+
+        local box = Instance.new("TextBox")
+        box.Size = UDim2.new(1, -76, 1, 0)
+        box.Position = UDim2.fromOffset(12, 0)
+        box.BackgroundTransparency = 1
+        box.Text = ""
+        box.PlaceholderText = "Type message..."
+        box.PlaceholderColor3 = C.Muted
+        box.TextColor3 = C.Text
+        box.Font = Enum.Font.GothamSemibold
+        box.TextSize = CFG.FONT_LABEL
+        box.TextXAlignment = Enum.TextXAlignment.Left
+        box.ClearTextOnFocus = false
+        box.ZIndex = 607
+        box.Parent = inputBg
+        registerTheme(box, "Text", "TextColor3")
+
+        local sendBtn = Instance.new("TextButton")
+        sendBtn.Size = UDim2.fromOffset(60, 32)
+        sendBtn.Position = UDim2.new(1, -68, 0.5, -16)
+        sendBtn.BackgroundColor3 = C.Accent
+        sendBtn.Text = isMob and "▶" or "SEND"
+        sendBtn.TextColor3 = Color3.new(1, 1, 1)
+        sendBtn.Font = Enum.Font.GothamBold
+        sendBtn.TextSize = isMob and 14 or 11
+        sendBtn.AutoButtonColor = false
+        sendBtn.BorderSizePixel = 0
+        sendBtn.ZIndex = 607
+        sendBtn.Parent = inputBg
+        registerTheme(sendBtn, "Accent", "BackgroundColor3")
+
+        local sc = Instance.new("UICorner")
+        sc.CornerRadius = UDim.new(0, 8)
+        sc.Parent = sendBtn
+
+                -- ===== RENDER MESSAGE (AVATAR + OWNER TAG) =====
+        local msgCounter = 0
+        
+        -- ⚠️ GANTI ANGKA INI DENGAN USERID LU
+        local OWNER_IDS = {
+            [5126297278] = true,   -- akun lu
+        }
+        
+        local function scrollBottom()
+            task.defer(function()
+                listFrame.CanvasPosition = Vector2.new(0, listFrame.AbsoluteCanvasSize.Y)
             end)
         end
-    end)
-    header.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
+
+        local function renderMessage(msg)
+            if emptyLbl.Parent then emptyLbl:Destroy() end
+
+            local isMe = (msg.userId == LocalPlayer.UserId)
+            local isOwner = (OWNER_IDS[msg.userId] == true)
+            
+            -- Avatar selalu muncul (PC & HP, beda ukuran)
+            local avatarSize = isMob and 26 or 34
+            local avatarGap = isMob and 6 or 10
+
+            local row = Instance.new("Frame")
+            row.Size = UDim2.new(1, 0, 0, 0)
+            row.AutomaticSize = Enum.AutomaticSize.Y
+            row.BackgroundColor3 = isOwner and Color3.fromRGB(45, 20, 10) or (isMe and C.Surface3 or C.Surface)
+            row.BackgroundTransparency = 0.3
+            row.BorderSizePixel = 0
+            msgCounter = msgCounter + 1
+            row.LayoutOrder = msgCounter
+            row.ZIndex = 607
+            row.Parent = listFrame
+
+            local rc = Instance.new("UICorner")
+            rc.CornerRadius = UDim.new(0, 10)
+            rc.Parent = row
+
+            -- Kalo owner, kasih stroke emas
+            if isOwner then
+                local ownerStroke = Instance.new("UIStroke")
+                ownerStroke.Color = Color3.fromRGB(255, 200, 50)
+                ownerStroke.Thickness = 1.5
+                ownerStroke.Transparency = 0.2
+                ownerStroke.Parent = row
+            end
+
+            local rp = Instance.new("UIPadding")
+            rp.PaddingTop = UDim.new(0, 8)
+            rp.PaddingBottom = UDim.new(0, 8)
+            rp.PaddingLeft = UDim.new(0, isMob and 8 or 10)
+            rp.PaddingRight = UDim.new(0, isMob and 8 or 10)
+            rp.Parent = row
+
+            -- ===== AVATAR =====
+            local avContainer = Instance.new("Frame")
+            avContainer.Size = UDim2.fromOffset(avatarSize, avatarSize)
+            avContainer.Position = UDim2.fromOffset(0, 0)
+            avContainer.BackgroundColor3 = C.Surface2
+            avContainer.BorderSizePixel = 0
+            avContainer.ZIndex = 608
+            avContainer.Parent = row
+            
+            local avCorner = Instance.new("UICorner")
+            avCorner.CornerRadius = UDim.new(1, 0)
+            avCorner.Parent = avContainer
+
+            local avImg = Instance.new("ImageLabel")
+            avImg.Size = UDim2.fromScale(1, 1)
+            avImg.BackgroundTransparency = 1
+            avImg.Image = "rbxthumb://type=AvatarHeadShot&id=" .. tostring(msg.userId) .. "&w=100&h=100"
+            avImg.ZIndex = 609
+            avImg.Parent = avContainer
+            
+            local avImgCorner = Instance.new("UICorner")
+            avImgCorner.CornerRadius = UDim.new(1, 0)
+            avImgCorner.Parent = avImg
+
+            local avStroke = Instance.new("UIStroke")
+            avStroke.Thickness = 1.5
+            avStroke.Transparency = 0.2
+            avStroke.Parent = avContainer
+            if isOwner then
+                avStroke.Color = Color3.fromRGB(255, 200, 50)
+            else
+                avStroke.Color = isMe and C.Accent2 or C.Accent
+            end
+
+            -- ===== HEADER (name + OWNER badge + time) =====
+            local hdr = Instance.new("Frame")
+            hdr.Size = UDim2.new(1, -(avatarSize + avatarGap), 0, isMob and 16 or 18)
+            hdr.Position = UDim2.fromOffset(avatarSize + avatarGap, 0)
+            hdr.BackgroundTransparency = 1
+            hdr.ZIndex = 608
+            hdr.Parent = row
+
+            local nameLbl = Instance.new("TextLabel")
+            nameLbl.Size = UDim2.new(0, 0, 1, 0)
+            nameLbl.AutomaticSize = Enum.AutomaticSize.X
+            nameLbl.BackgroundTransparency = 1
+            nameLbl.Text = (isMe and "You" or msg.displayName)
+            nameLbl.TextColor3 = isOwner and Color3.fromRGB(255, 200, 50) or (isMe and C.Accent2 or C.Accent)
+            nameLbl.Font = Enum.Font.GothamBold
+            nameLbl.TextSize = isMob and 10 or 11
+            nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+            nameLbl.ZIndex = 609
+            nameLbl.Parent = hdr
+
+            if isOwner then
+                local ownerBadge = Instance.new("Frame")
+                ownerBadge.Size = UDim2.fromOffset(isMob and 48 or 54, isMob and 14 or 16)
+                ownerBadge.Position = UDim2.fromOffset(60, 1)
+                ownerBadge.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
+                ownerBadge.BorderSizePixel = 0
+                ownerBadge.ZIndex = 610
+                ownerBadge.Parent = hdr
+
+                local obCorner = Instance.new("UICorner")
+                obCorner.CornerRadius = UDim.new(0, 4)
+                obCorner.Parent = ownerBadge
+
+                local obLbl = Instance.new("TextLabel")
+                obLbl.Size = UDim2.fromScale(1, 1)
+                obLbl.BackgroundTransparency = 1
+                obLbl.Text = "👑 OWNER"
+                obLbl.TextColor3 = Color3.fromRGB(30, 20, 0)
+                obLbl.Font = Enum.Font.GothamBold
+                obLbl.TextSize = isMob and 8 or 9
+                obLbl.ZIndex = 611
+                obLbl.Parent = ownerBadge
+            end
+
+            local timeLbl = Instance.new("TextLabel")
+            timeLbl.Size = UDim2.fromOffset(50, 16)
+            timeLbl.Position = UDim2.new(1, -50, 0, 1)
+            timeLbl.BackgroundTransparency = 1
+            timeLbl.Text = msg.time
+            timeLbl.TextColor3 = C.Muted
+            timeLbl.Font = Enum.Font.GothamSemibold
+            timeLbl.TextSize = isMob and 9 or 10
+            timeLbl.TextXAlignment = Enum.TextXAlignment.Right
+            timeLbl.ZIndex = 609
+            timeLbl.Parent = hdr
+
+            -- ===== BODY =====
+            local bodyLbl = Instance.new("TextLabel")
+            bodyLbl.Size = UDim2.new(1, -(avatarSize + avatarGap), 0, 0)
+            bodyLbl.AutomaticSize = Enum.AutomaticSize.Y
+            bodyLbl.Position = UDim2.fromOffset(avatarSize + avatarGap, isMob and 18 or 20)
+            bodyLbl.BackgroundTransparency = 1
+            bodyLbl.Text = msg.text
+            bodyLbl.TextColor3 = C.Text
+            bodyLbl.Font = Enum.Font.GothamSemibold
+            bodyLbl.TextSize = CFG.CHAT_FONT
+            bodyLbl.TextWrapped = true
+            bodyLbl.TextXAlignment = Enum.TextXAlignment.Left
+            bodyLbl.TextYAlignment = Enum.TextYAlignment.Top
+            bodyLbl.ZIndex = 608
+            bodyLbl.Parent = row
+            registerTheme(bodyLbl, "Text", "TextColor3")
+
+            scrollBottom()
         end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            main.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
+
+        -- Hydrate
+        for _, m in ipairs(Shared.LiveChat_Messages) do
+            renderMessage(m)
         end
-    end)
 
-    return main
-end
-
--- ============================================================
--- BUILD LIVE CHAT WINDOW
--- ============================================================
-local function buildLiveChatWindow(parent)
-    print("[CHAT] buildLiveChatWindow START")
-
-    local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
-    local isMob = IS_MOBILE
-
-    local winW = isMob and math.floor(viewport.X * 0.92) or math.min(520, math.floor(viewport.X * 0.55))
-    local winH = isMob and math.floor(viewport.Y * 0.7) or 520
-
-    local win = Instance.new("Frame")
-    win.Name = "LiveChatWindow"
-    win.AnchorPoint = Vector2.new(0.5, 0.5)
-    win.Position = UDim2.fromScale(0.5, 0.5)
-    win.Size = UDim2.fromOffset(winW, winH)
-    win.BackgroundColor3 = C.BG
-    win.BorderSizePixel = 0
-    win.Visible = false
-    win.ZIndex = 600
-    win.Parent = parent
-    registerTheme(win, "BG", "BackgroundColor3")
-
-    local shadow = Instance.new("Frame")
-    shadow.Size = UDim2.new(1, 20, 1, 20)
-    shadow.Position = UDim2.fromOffset(-10, -10)
-    shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.BackgroundTransparency = 0.5
-    shadow.BorderSizePixel = 0
-    shadow.ZIndex = 599
-    shadow.Parent = win
-    local shadowCorner = Instance.new("UICorner")
-    shadowCorner.CornerRadius = UDim.new(0, 20)
-    shadowCorner.Parent = shadow
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 16)
-    corner.Parent = win
-
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = C.Accent
-    stroke.Thickness = 2.2
-    stroke.Transparency = 0.15
-    stroke.Parent = win
-    registerTheme(stroke, "Accent", "Color")
-
-    local gradient = Instance.new("UIGradient")
-    gradient.Rotation = 90
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(22, 23, 28)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 9, 12)),
-    })
-    gradient.Parent = win
-
-    local headerH = 42
-    local header = Instance.new("Frame")
-    header.Size = UDim2.new(1, 0, 0, headerH)
-    header.BackgroundColor3 = C.Surface
-    header.BorderSizePixel = 0
-    header.ZIndex = 610
-    header.Parent = win
-    registerTheme(header, "Surface", "BackgroundColor3")
-
-    local headerCorner = Instance.new("UICorner")
-    headerCorner.CornerRadius = UDim.new(0, 16)
-    headerCorner.Parent = header
-
-    local headerFix = Instance.new("Frame")
-    headerFix.Size = UDim2.new(1, 0, 0, 16)
-    headerFix.Position = UDim2.new(0, 0, 1, -16)
-    headerFix.BackgroundColor3 = C.Surface
-    headerFix.BorderSizePixel = 0
-    headerFix.ZIndex = 610
-    headerFix.Parent = header
-
-    local headerGlow = Instance.new("Frame")
-    headerGlow.Size = UDim2.new(1, -20, 0, 2)
-    headerGlow.Position = UDim2.new(0, 10, 1, -2)
-    headerGlow.BackgroundColor3 = C.Accent
-    headerGlow.BackgroundTransparency = 0.15
-    headerGlow.BorderSizePixel = 0
-    headerGlow.ZIndex = 612
-    headerGlow.Parent = header
-    local hgc = Instance.new("UICorner")
-    hgc.CornerRadius = UDim.new(1, 0)
-    hgc.Parent = headerGlow
-    registerTheme(headerGlow, "Accent", "BackgroundColor3")
-
-    local dot = Instance.new("Frame")
-    dot.Size = UDim2.fromOffset(10, 10)
-    dot.Position = UDim2.new(0, 12, 0.5, -5)
-    dot.BackgroundColor3 = C.Accent
-    dot.BorderSizePixel = 0
-    dot.ZIndex = 613
-    dot.Parent = header
-    local dotCorner = Instance.new("UICorner")
-    dotCorner.CornerRadius = UDim.new(1, 0)
-    dotCorner.Parent = dot
-    registerTheme(dot, "Accent", "BackgroundColor3")
-
-    local titleLbl = Instance.new("TextLabel")
-    titleLbl.Size = UDim2.new(1, -100, 1, 0)
-    titleLbl.Position = UDim2.fromOffset(30, 0)
-    titleLbl.BackgroundTransparency = 1
-    titleLbl.Text = "LIVE CHAT (GLOBAL)"
-    titleLbl.TextColor3 = C.Text
-    titleLbl.Font = Enum.Font.GothamBold
-    titleLbl.TextSize = isMob and 12 or 13
-    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
-    titleLbl.ZIndex = 613
-    titleLbl.Parent = header
-    registerTheme(titleLbl, "Text", "TextColor3")
-
-    local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.fromOffset(28, 28)
-    closeBtn.Position = UDim2.new(1, -36, 0.5, -14)
-    closeBtn.BackgroundColor3 = C.Surface3
-    closeBtn.Text = "x"
-    closeBtn.TextColor3 = C.Text
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 18
-    closeBtn.BorderSizePixel = 0
-    closeBtn.ZIndex = 613
-    closeBtn.Parent = header
-    registerTheme(closeBtn, "Surface3", "BackgroundColor3")
-    registerTheme(closeBtn, "Text", "TextColor3")
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(1, 0)
-    closeCorner.Parent = closeBtn
-
-    closeBtn.MouseButton1Click:Connect(function()
-        win.Visible = false
-    end)
-
-    local dragging, dragStart, startPos = false, nil, nil
-    header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = win.Position
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local delta = input.Position - dragStart
-            win.Position = UDim2.new(
-                startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
-
-    local body = Instance.new("Frame")
-    body.Size = UDim2.new(1, -20, 1, -(headerH + 16))
-    body.Position = UDim2.new(0, 10, 0, headerH + 8)
-    body.BackgroundTransparency = 1
-    body.ZIndex = 605
-    body.Parent = win
-
-    local listFrame = Instance.new("ScrollingFrame")
-    listFrame.Size = UDim2.new(1, 0, 1, -50)
-    listFrame.Position = UDim2.new(0, 0, 0, 0)
-    listFrame.BackgroundColor3 = C.Surface2
-    listFrame.BackgroundTransparency = 0.4
-    listFrame.BorderSizePixel = 0
-    listFrame.ScrollBarThickness = 4
-    listFrame.ScrollBarImageColor3 = C.Accent
-    listFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    listFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    listFrame.ZIndex = 606
-    listFrame.Parent = body
-    registerTheme(listFrame, "Surface2", "BackgroundColor3")
-
-    local lc = Instance.new("UICorner")
-    lc.CornerRadius = UDim.new(0, 12)
-    lc.Parent = listFrame
-
-    local ls = Instance.new("UIStroke")
-    ls.Color = C.Accent
-    ls.Thickness = 1
-    ls.Transparency = 0.65
-    ls.Parent = listFrame
-    registerTheme(ls, "Accent", "Color")
-
-    local lp = Instance.new("UIPadding")
-    lp.PaddingTop = UDim.new(0, 8)
-    lp.PaddingBottom = UDim.new(0, 8)
-    lp.PaddingLeft = UDim.new(0, 8)
-    lp.PaddingRight = UDim.new(0, 8)
-    lp.Parent = listFrame
-
-    local ll = Instance.new("UIListLayout")
-    ll.Padding = UDim.new(0, 6)
-    ll.SortOrder = Enum.SortOrder.LayoutOrder
-    ll.Parent = listFrame
-
-    local emptyLbl = Instance.new("TextLabel")
-    emptyLbl.Size = UDim2.new(1, 0, 0, 40)
-    emptyLbl.BackgroundTransparency = 1
-    emptyLbl.Text = "No messages yet..."
-    emptyLbl.TextColor3 = C.Muted
-    emptyLbl.Font = Enum.Font.GothamSemibold
-    emptyLbl.TextSize = CFG.FONT_LABEL
-    emptyLbl.ZIndex = 607
-    emptyLbl.Parent = listFrame
-    registerTheme(emptyLbl, "Muted", "TextColor3")
-
-    local inputBg = Instance.new("Frame")
-    inputBg.Size = UDim2.new(1, 0, 0, 42)
-    inputBg.Position = UDim2.new(0, 0, 1, -42)
-    inputBg.BackgroundColor3 = C.Surface3
-    inputBg.BorderSizePixel = 0
-    inputBg.ZIndex = 606
-    inputBg.Parent = body
-    registerTheme(inputBg, "Surface3", "BackgroundColor3")
-
-    local ic = Instance.new("UICorner")
-    ic.CornerRadius = UDim.new(0, 10)
-    ic.Parent = inputBg
-
-    local is = Instance.new("UIStroke")
-    is.Color = C.Accent
-    is.Thickness = 1
-    is.Transparency = 0.5
-    is.Parent = inputBg
-    registerTheme(is, "Accent", "Color")
-
-    local box = Instance.new("TextBox")
-    box.Size = UDim2.new(1, -76, 1, 0)
-    box.Position = UDim2.fromOffset(12, 0)
-    box.BackgroundTransparency = 1
-    box.Text = ""
-    box.PlaceholderText = "Type message..."
-    box.PlaceholderColor3 = C.Muted
-    box.TextColor3 = C.Text
-    box.Font = Enum.Font.GothamSemibold
-    box.TextSize = CFG.FONT_LABEL
-    box.TextXAlignment = Enum.TextXAlignment.Left
-    box.ClearTextOnFocus = false
-    box.ZIndex = 607
-    box.Parent = inputBg
-    registerTheme(box, "Text", "TextColor3")
-
-    local sendBtn = Instance.new("TextButton")
-    sendBtn.Size = UDim2.fromOffset(60, 32)
-    sendBtn.Position = UDim2.new(1, -68, 0.5, -16)
-    sendBtn.BackgroundColor3 = C.Accent
-    sendBtn.Text = "SEND"
-    sendBtn.TextColor3 = Color3.new(1, 1, 1)
-    sendBtn.Font = Enum.Font.GothamBold
-    sendBtn.TextSize = 11
-    sendBtn.AutoButtonColor = false
-    sendBtn.BorderSizePixel = 0
-    sendBtn.ZIndex = 607
-    sendBtn.Parent = inputBg
-    registerTheme(sendBtn, "Accent", "BackgroundColor3")
-
-    local sc = Instance.new("UICorner")
-    sc.CornerRadius = UDim.new(0, 8)
-    sc.Parent = sendBtn
-
-    local msgCounter = 0
-    local OWNER_IDS = { [5126297278] = true }
-
-    local function scrollBottom()
-        task.defer(function()
-            listFrame.CanvasPosition = Vector2.new(0, listFrame.AbsoluteCanvasSize.Y)
+        ChatClient.onMessage(function(msg)
+            renderMessage(msg)
         end)
-    end
 
-    local function renderMessage(msg)
-        if emptyLbl.Parent then emptyLbl:Destroy() end
-
-        local isMe = (msg.userId == LocalPlayer.UserId)
-        local isOwner = (OWNER_IDS[msg.userId] == true)
-        local avatarSize = isMob and 26 or 34
-        local avatarGap = isMob and 6 or 10
-
-        local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, 0, 0, 0)
-        row.AutomaticSize = Enum.AutomaticSize.Y
-        row.BackgroundColor3 = isOwner and Color3.fromRGB(45, 20, 10) or (isMe and C.Surface3 or C.Surface)
-        row.BackgroundTransparency = 0.3
-        row.BorderSizePixel = 0
-        msgCounter = msgCounter + 1
-        row.LayoutOrder = msgCounter
-        row.ZIndex = 607
-        row.Parent = listFrame
-        Instance.new("UICorner", row).CornerRadius = UDim.new(0, 10)
-
-        if isOwner then
-            local ownerStroke = Instance.new("UIStroke")
-            ownerStroke.Color = Color3.fromRGB(255, 200, 50)
-            ownerStroke.Thickness = 1.5
-            ownerStroke.Transparency = 0.2
-            ownerStroke.Parent = row
+        -- Send
+        local function doSend()
+            local text = box.Text
+            if text == "" then return end
+            sendBtn.Text = "..."
+            task.spawn(function()
+                local ok, err = ChatClient.send(text)
+                if ok then
+                    box.Text = ""
+                else
+                    notify("Chat: " .. tostring(err), "error")
+                end
+                sendBtn.Text = isMob and "▶" or "SEND"
+            end)
         end
 
-        local rp = Instance.new("UIPadding")
-        rp.PaddingTop = UDim.new(0, 8)
-        rp.PaddingBottom = UDim.new(0, 8)
-        rp.PaddingLeft = UDim.new(0, isMob and 8 or 10)
-        rp.PaddingRight = UDim.new(0, isMob and 8 or 10)
-        rp.Parent = row
-
-        local avContainer = Instance.new("Frame")
-        avContainer.Size = UDim2.fromOffset(avatarSize, avatarSize)
-        avContainer.Position = UDim2.fromOffset(0, 0)
-        avContainer.BackgroundColor3 = C.Surface2
-        avContainer.BorderSizePixel = 0
-        avContainer.ZIndex = 608
-        avContainer.Parent = row
-        Instance.new("UICorner", avContainer).CornerRadius = UDim.new(1, 0)
-
-        local avImg = Instance.new("ImageLabel")
-        avImg.Size = UDim2.fromScale(1, 1)
-        avImg.BackgroundTransparency = 1
-        avImg.Image = "rbxthumb://type=AvatarHeadShot&id=" .. tostring(msg.userId) .. "&w=100&h=100"
-        avImg.ZIndex = 609
-        avImg.Parent = avContainer
-        Instance.new("UICorner", avImg).CornerRadius = UDim.new(1, 0)
-
-        local nameLbl2 = Instance.new("TextLabel")
-        nameLbl2.Size = UDim2.new(1, -(avatarSize + avatarGap), 0, 18)
-        nameLbl2.Position = UDim2.fromOffset(avatarSize + avatarGap, 0)
-        nameLbl2.BackgroundTransparency = 1
-        nameLbl2.Text = (isMe and "You" or msg.displayName)
-        nameLbl2.TextColor3 = isOwner and Color3.fromRGB(255, 200, 50) or (isMe and C.Accent2 or C.Accent)
-        nameLbl2.Font = Enum.Font.GothamBold
-        nameLbl2.TextSize = 11
-        nameLbl2.TextXAlignment = Enum.TextXAlignment.Left
-        nameLbl2.ZIndex = 609
-        nameLbl2.Parent = row
-
-        local bodyLbl = Instance.new("TextLabel")
-        bodyLbl.Size = UDim2.new(1, -(avatarSize + avatarGap), 0, 0)
-        bodyLbl.AutomaticSize = Enum.AutomaticSize.Y
-        bodyLbl.Position = UDim2.fromOffset(avatarSize + avatarGap, 20)
-        bodyLbl.BackgroundTransparency = 1
-        bodyLbl.Text = msg.text
-        bodyLbl.TextColor3 = C.Text
-        bodyLbl.Font = Enum.Font.GothamSemibold
-        bodyLbl.TextSize = CFG.CHAT_FONT
-        bodyLbl.TextWrapped = true
-        bodyLbl.TextXAlignment = Enum.TextXAlignment.Left
-        bodyLbl.TextYAlignment = Enum.TextYAlignment.Top
-        bodyLbl.ZIndex = 608
-        bodyLbl.Parent = row
-        registerTheme(bodyLbl, "Text", "TextColor3")
-
-        scrollBottom()
-    end
-
-    for _, m in ipairs(Shared.LiveChat_Messages) do
-        renderMessage(m)
-    end
-
-    ChatClient.onMessage(function(msg)
-        renderMessage(msg)
-    end)
-
-    local function doSend()
-        local text = box.Text
-        if text == "" then return end
-        sendBtn.Text = "..."
-        task.spawn(function()
-            local ok, err = ChatClient.send(text)
-            if ok then box.Text = ""
-            else notify("Chat: " .. tostring(err), "error") end
-            sendBtn.Text = "SEND"
+        sendBtn.MouseButton1Click:Connect(doSend)
+        box.FocusLost:Connect(function(enter)
+            if enter then doSend() end
         end)
+
+        print("[CHAT] buildLiveChatWindow OK")
+        return win
     end
-
-    sendBtn.MouseButton1Click:Connect(doSend)
-    box.FocusLost:Connect(function(enter)
-        if enter then doSend() end
-    end)
-
-    print("[CHAT] buildLiveChatWindow OK")
-    return win
-end
 
 -- ============================================================
--- LOADING SCREEN
+-- LOADING SCREEN BRUTAL
 -- ============================================================
 local function buildLoadingScreen(parent)
+    local viewport = (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize) or Vector2.new(1280, 720)
+
     local winW = IS_MOBILE and 280 or 360
     local winH = IS_MOBILE and 200 or 240
 
@@ -2919,10 +3123,18 @@ local function buildLoadingScreen(parent)
     local stroke1 = Instance.new("UIStroke")
     stroke1.Color = Color3.fromRGB(255, 30, 60)
     stroke1.Thickness = 3
+    stroke1.Transparency = 0
     stroke1.Parent = loading
+
+    local stroke2 = Instance.new("UIStroke")
+    stroke2.Color = Color3.fromRGB(255, 255, 255)
+    stroke2.Thickness = 1
+    stroke2.Transparency = 0.7
+    stroke2.Parent = loading
 
     local topBar = Instance.new("Frame")
     topBar.Size = UDim2.new(1, 0, 0, 4)
+    topBar.Position = UDim2.fromOffset(0, 0)
     topBar.BackgroundColor3 = Color3.fromRGB(255, 30, 60)
     topBar.BorderSizePixel = 0
     topBar.ZIndex = 310
@@ -2936,6 +3148,44 @@ local function buildLoadingScreen(parent)
     botBar.ZIndex = 310
     botBar.Parent = loading
 
+    local function makeBracket(posX, posY, sizeX, sizeY)
+        local b = Instance.new("Frame")
+        b.Size = UDim2.fromOffset(sizeX, sizeY)
+        b.Position = UDim2.fromOffset(posX, posY)
+        b.BackgroundColor3 = Color3.fromRGB(255, 30, 60)
+        b.BorderSizePixel = 0
+        b.ZIndex = 311
+        b.Parent = loading
+        return b
+    end
+
+    makeBracket(6, 6, 22, 2)
+    makeBracket(6, 6, 2, 22)
+    makeBracket(winW - 28, 6, 22, 2)
+    makeBracket(winW - 8, 6, 2, 22)
+    makeBracket(6, winH - 8, 22, 2)
+    makeBracket(6, winH - 28, 2, 22)
+    makeBracket(winW - 28, winH - 8, 22, 2)
+    makeBracket(winW - 8, winH - 28, 2, 22)
+
+    local scanlines = Instance.new("Frame")
+    scanlines.Size = UDim2.fromScale(1, 1)
+    scanlines.BackgroundTransparency = 1
+    scanlines.ZIndex = 320
+    scanlines.ClipsDescendants = true
+    scanlines.Parent = loading
+
+    for i = 0, math.floor(winH / 4) do
+        local line = Instance.new("Frame")
+        line.Size = UDim2.new(1, 0, 0, 1)
+        line.Position = UDim2.fromOffset(0, i * 4)
+        line.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        line.BackgroundTransparency = 0.65
+        line.BorderSizePixel = 0
+        line.ZIndex = 320
+        line.Parent = scanlines
+    end
+
     local noise = Instance.new("Frame")
     noise.Size = UDim2.fromScale(1, 1)
     noise.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -2943,6 +3193,20 @@ local function buildLoadingScreen(parent)
     noise.BorderSizePixel = 0
     noise.ZIndex = 319
     noise.Parent = loading
+
+    local glitchBars = {}
+    for i = 1, 6 do
+        local bar = Instance.new("Frame")
+        bar.Size = UDim2.new(1, 0, 0, math.random(2, 5))
+        bar.Position = UDim2.fromScale(0, math.random())
+        bar.BackgroundColor3 = Color3.fromRGB(255, 30, 60)
+        bar.BackgroundTransparency = 0.4
+        bar.BorderSizePixel = 0
+        bar.ZIndex = 330
+        bar.Visible = false
+        bar.Parent = loading
+        table.insert(glitchBars, bar)
+    end
 
     local vHolder = Instance.new("Frame")
     vHolder.Size = UDim2.fromScale(1, 0.55)
@@ -2996,6 +3260,70 @@ local function buildLoadingScreen(parent)
     vLabel.ZIndex = 306
     vLabel.Parent = vHolder
 
+    local lightningHolder = Instance.new("Frame")
+    lightningHolder.Size = UDim2.fromScale(1, 1)
+    lightningHolder.BackgroundTransparency = 1
+    lightningHolder.ZIndex = 340
+    lightningHolder.ClipsDescendants = true
+    lightningHolder.Parent = loading
+
+    local function createLightning()
+        local bolt = Instance.new("Frame")
+        bolt.BackgroundTransparency = 1
+        bolt.Size = UDim2.fromScale(1, 1)
+        bolt.ZIndex = 341
+        bolt.Parent = lightningHolder
+
+        local segments = 8
+        local startX = winW * 0.5
+        local startY = 0
+        local endX = winW * 0.5
+        local endY = winH * 0.5
+
+        for i = 1, segments do
+            local t1 = (i - 1) / segments
+            local t2 = i / segments
+            local x1 = startX + (endX - startX) * t1 + math.random(-20, 20)
+            local y1 = startY + (endY - startY) * t1
+            local x2 = startX + (endX - startX) * t2 + math.random(-20, 20)
+            local y2 = startY + (endY - startY) * t2
+
+            local dx = x2 - x1
+            local dy = y2 - y1
+            local length = math.sqrt(dx * dx + dy * dy)
+            local angle = math.atan2(dy, dx)
+
+            local seg = Instance.new("Frame")
+            seg.Size = UDim2.fromOffset(length, 2)
+            seg.Position = UDim2.fromOffset((x1 + x2) / 2 - length / 2, (y1 + y2) / 2 - 1)
+            seg.Rotation = math.deg(angle)
+            seg.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            seg.BorderSizePixel = 0
+            seg.ZIndex = 342
+            seg.Parent = bolt
+
+            local glowSeg = Instance.new("Frame")
+            glowSeg.Size = UDim2.fromOffset(length + 4, 6)
+            glowSeg.Position = UDim2.fromOffset((x1 + x2) / 2 - (length + 4) / 2, (y1 + y2) / 2 - 3)
+            glowSeg.Rotation = math.deg(angle)
+            glowSeg.BackgroundColor3 = Color3.fromRGB(255, 30, 60)
+            glowSeg.BackgroundTransparency = 0.5
+            glowSeg.BorderSizePixel = 0
+            glowSeg.ZIndex = 341
+            glowSeg.Parent = bolt
+        end
+
+        TweenService:Create(bolt, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+        for _, child in ipairs(bolt:GetChildren()) do
+            if child:IsA("Frame") then
+                TweenService:Create(child, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+            end
+        end
+        task.delay(0.4, function()
+            if bolt then bolt:Destroy() end
+        end)
+    end
+
     local loadingText = Instance.new("TextLabel")
     loadingText.Size = UDim2.new(1, -20, 0, 18)
     loadingText.Position = UDim2.new(0, 10, 0, winH - 68)
@@ -3003,7 +3331,7 @@ local function buildLoadingScreen(parent)
     loadingText.Text = "LOADING..."
     loadingText.TextColor3 = Color3.fromRGB(255, 255, 255)
     loadingText.Font = Enum.Font.GothamBlack
-    loadingText.TextSize = 12
+    loadingText.TextSize = IS_MOBILE and 11 or 12
     loadingText.TextXAlignment = Enum.TextXAlignment.Left
     loadingText.ZIndex = 306
     loadingText.Parent = loading
@@ -3015,6 +3343,12 @@ local function buildLoadingScreen(parent)
     barBg.BorderSizePixel = 0
     barBg.ZIndex = 305
     barBg.Parent = loading
+
+    local barStroke = Instance.new("UIStroke")
+    barStroke.Color = Color3.fromRGB(255, 30, 60)
+    barStroke.Thickness = 1
+    barStroke.Transparency = 0.3
+    barStroke.Parent = barBg
 
     local barFill = Instance.new("Frame")
     barFill.Size = UDim2.new(0, 0, 1, 0)
@@ -3049,6 +3383,21 @@ local function buildLoadingScreen(parent)
 
     task.spawn(function()
         while loading.Parent do
+            task.wait(math.random(8, 25) / 100)
+            for _, bar in ipairs(glitchBars) do
+                if math.random() < 0.4 then
+                    bar.Visible = true
+                    bar.Position = UDim2.fromScale(0, math.random())
+                    bar.Size = UDim2.new(1, 0, 0, math.random(2, 10))
+                    task.wait(0.03)
+                    bar.Visible = false
+                end
+            end
+        end
+    end)
+
+    task.spawn(function()
+        while loading.Parent do
             task.wait(math.random(6, 15) / 100)
             local offset = math.random(1, 6)
             vRed.Position = UDim2.fromOffset(-offset, 0)
@@ -3078,14 +3427,24 @@ local function buildLoadingScreen(parent)
     task.spawn(function()
         local startSize = 1
         local endSize = IS_MOBILE and 130 or 170
-        for i = 1, 40 do
-            task.wait(1.2 / 40)
-            local t = i / 40
+        local duration = 1.2
+        local steps = 40
+        for i = 1, steps do
+            task.wait(duration / steps)
+            local t = i / steps
             local eased = 1 - (1 - t) ^ 3
-            vLabel.TextSize = startSize + (endSize - startSize) * eased
-            vGlow.TextSize = startSize + (endSize - startSize) * eased
-            vRed.TextSize = startSize + (endSize - startSize) * eased
-            vBlue.TextSize = startSize + (endSize - startSize) * eased
+            local size = startSize + (endSize - startSize) * eased
+            vLabel.TextSize = size
+            vGlow.TextSize = size
+            vRed.TextSize = size
+            vBlue.TextSize = size
+        end
+
+        task.wait(0.2)
+        for i = 1, 6 do
+            vLabel.Position = UDim2.fromOffset(math.random(-6, 6), math.random(-6, 6))
+            task.wait(0.04)
+            vLabel.Position = UDim2.fromOffset(0, 0)
         end
     end)
 
@@ -3105,10 +3464,10 @@ local function buildLoadingScreen(parent)
         end
 
         local phases = {
-            {text = "LOADING MODULES...", target = 0.4, duration = 1.5},
-            {text = "CONNECTING SERVER...", target = 0.6, duration = 1.5},
-            {text = "LOADING FEATURES...", target = 0.8, duration = 1.5},
-            {text = "FINALIZING...", target = 1.0, duration = 1.5},
+            {text = "LOADING MODULES...", target = 0.4, duration = 2.5},
+            {text = "CONNECTING SERVER...", target = 0.6, duration = 2.5},
+            {text = "LOADING FEATURES...", target = 0.8, duration = 2.5},
+            {text = "FINALIZING...", target = 1.0, duration = 2.5},
         }
 
         for _, phase in ipairs(phases) do
@@ -3126,7 +3485,14 @@ local function buildLoadingScreen(parent)
 
         loadingText.Text = "READY!"
         percentLbl.Text = "100%"
-        task.wait(0.5)
+
+        for i = 1, 8 do
+            loading.Position = UDim2.fromScale(0.5 + math.random(-15, 15)/1000, 0.5 + math.random(-15, 15)/1000)
+            task.wait(0.03)
+        end
+        loading.Position = UDim2.fromScale(0.5, 0.5)
+
+        task.wait(0.6)
 
         TweenService:Create(loading, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
             Size = UDim2.fromOffset(0, 0)
@@ -3134,11 +3500,7 @@ local function buildLoadingScreen(parent)
         task.wait(0.5)
 
         if loading then loading:Destroy() end
-
         buildMainWindow(parent)
-        local liveChatWin = buildLiveChatWindow(parent)
-        _G.VRILZ_LiveChatWindow = liveChatWin
-
         notify("Welcome, " .. LocalPlayer.DisplayName, "success")
     end)
 end
@@ -3147,34 +3509,88 @@ end
 -- UI.INIT
 -- ============================================================
 function UI.Init(sharedState)
-    Shared = sharedState or {}
+    Shared = sharedState
     Shared.Notify = notify
-    _G.VRILZ_UI_Shared = Shared
+    _G.VRILZ_UI_Shared = Shared   -- ← TAMBAH INI (biar bisa debug)
 
-    Shared.AntiAFK_Enabled = true
-    Shared.ShowTitle = true
-    -- ===== ANIME DICE STATE =====
-    Shared.AutoRoll_Enabled = false
+    Shared.ESP_Eggs_Enabled = false
+    Shared.ESP_EggName_Enabled = false
+    Shared.ESP_EggLuck_Enabled = false
+    Shared.ESP_Pets_Enabled = false
+    Shared.ESP_PetName_Enabled = false
+    Shared.ESP_PetCash_Enabled = false
+    Shared.ESP_PetSpeed_Enabled = false
+    Shared.AutoSteal_Enabled = false
+    Shared.AutoReturn_Enabled = false
+    Shared.AutoHatch_Enabled = false
+    Shared.AutoPlantEgg_Enabled = false
+    Shared.AutoPlantEgg_Filter = "None"
+    Shared.AutoRidePet_Enabled = false
     Shared.AutoEquipBest_Enabled = false
-    Shared.AutoClaim_Enabled = false
-    Shared.AutoTeleportSell_Enabled = false
-    
+    Shared.SelectedEgg = "Cherub"
+    Shared.EggPrediction_Enabled = false
+    Shared.EggsInMap = {}
+    Shared.EggPredictions = {}
+
+        Shared.Speed_Enabled = false
+    Shared.Speed_Value = 100
+    Shared.InstantPickup_Enabled = false
+    Shared.AutoFarm_Enabled = false
+    Shared.AntiAFK_Enabled = true   -- ← TAMBAH INI
+    Shared.SelectedRarities = {
+        ["None"] = true,
+        ["Common"] = false,
+        ["Uncommon"] = false,
+        ["Rare"] = false,
+        ["Epic"] = false,
+        ["Legendary"] = false,
+        ["Mythic"] = false,
+        ["Divine"] = false,
+        ["Ethereal"] = false,
+        ["Secret"] = false,
+    }
+    Shared.AutoHatchLuck_Enabled = false
+    Shared.HatchLuck_Mode = "Max"
+      Shared.StealMode = "TP"
+    Shared.ShowTitle = true
+    Shared.RarityNotifThreshold = "Legendary"
+    Shared.VolcanicHunt_Enabled = false
+    Shared.VolcanicReturn_Enabled = false
+    Shared.VolcanicMutation_Enabled = false
+        Shared.AutoMutation_Enabled = false
+    Shared.MutationReturn_Enabled = false
+    Shared.MutationStealMode = "Rarity"   -- "Rarity" atau "Name"
+        Shared.MutationSelectedEggs = {
+        ["Cherub Egg"] = false, ["Volcanic Egg"] = false, ["Blackhole Egg"] = false,
+        ["Solaris Egg"] = false, ["Galaxy Egg"] = false, ["Crystal Egg"] = false,
+        ["Golden Egg"] = false, ["Glass Egg"] = false, ["Skull Egg"] = false,
+        ["Sinister Egg"] = false, ["Soul Egg"] = false, ["Dominus Egg"] = false,
+        ["Slime Egg"] = false, ["Flower Egg"] = false, ["Leaf Egg"] = false,
+        ["Stone Egg"] = false, ["Easter Egg"] = false, ["Cracked Egg"] = false,
+        ["Ice Egg"] = false, ["Tidal Egg"] = false, ["Bloom Egg"] = false,
+        ["Aurora Egg"] = false, ["White Egg"] = false, ["Brown Egg"] = false,
+        ["Flaming Egg"] = false, ["Mushroom Egg"] = false, ["Asteroid Egg"] = false,
+        ["Giant Egg"] = false, ["Diamond Egg"] = false, ["Dragon Egg"] = false,
+    }
+        Shared.FPSBoost_Enabled = false
+    Shared.HD4K_Enabled = false
+
+    -- Live Chat state
     Shared.LiveChat_Messages = {}
     Shared.LiveChat_MaxMessages = CFG.CHAT_MAX_MSG
     Shared.LiveChat_PollInterval = 1.5
 
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "VRILZHUB_AnimeDice"
+    ScreenGui.Name = "VRILZHUB_RideAPet"
     ScreenGui.ResetOnSpawn = false
     ScreenGui.IgnoreGuiInset = true
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.Parent = game:GetService("CoreGui")
 
-    local parentGui = LocalPlayer:WaitForChild("PlayerGui")
-    ScreenGui.Parent = parentGui
-
-    setupNotifHolder(ScreenGui)
+        setupNotifHolder(ScreenGui)
     setupDropdownLayer(ScreenGui)
 
+    -- Auto-start chat polling (biar selalu nyambung)
     task.spawn(function()
         task.wait(2)
         pcall(function()
@@ -3184,16 +3600,21 @@ function UI.Init(sharedState)
         end)
     end)
 
+        -- Load custom title dari save file
     task.spawn(function()
         task.wait(1)
         local savedTitle = loadCustomTitle()
-        if savedTitle then print("[TITLE] Loaded: " .. savedTitle) end
+        if savedTitle then
+            print("[TITLE] Loaded: " .. savedTitle)
+        end
         task.wait(1)
-        if _G.VRILZ_RefreshTitle then _G.VRILZ_RefreshTitle() end
+        if _G.VRILZ_RefreshTitle then
+            _G.VRILZ_RefreshTitle()
+        end
     end)
 
+    -- LANGSUNG LOADING (tanpa key system)
     buildLoadingScreen(ScreenGui)
 end
 
-_G.VRILZ_UI = UI
 return UI
