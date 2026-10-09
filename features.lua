@@ -1,5 +1,5 @@
 --=============================================================
--- VRILZHUB FEATURES - ANIME DICE v4 (FAST ROLL)
+-- VRILZHUB FEATURES - ANIME DICE v5 (AUTO ROLL + AUTO COLLECT)
 --=============================================================
 
 local Players = game:GetService("Players")
@@ -102,7 +102,6 @@ end
 local Features = {}
 
 --========== AUTO ROLL: LISTEN ROLL MESSAGE ==========
--- Ini yang bikin kita dapet hasil roll tanpa nunggu animasi
 if Remotes.RollMessage then
     Remotes.RollMessage.OnClientEvent:Connect(function(data)
         if type(data) == "table" and data.message then
@@ -110,7 +109,7 @@ if Remotes.RollMessage then
             local unitName = msg:match("<b>(.-)</b>")
             local chance = msg:match("<b>(.-)</b>%s*chance")
             if chance == unitName then chance = nil end
-            
+
             local shared = S()
             if shared and next(shared) then
                 shared.LastRoll = unitName
@@ -121,15 +120,12 @@ if Remotes.RollMessage then
 end
 
 --========== AUTO ROLL (FAST - SKIP ANIMASI) ==========
--- Pakai RollDice:InvokeServer() di dalam task.spawn
--- biar ga nunggu return (return-nya nil, cuma trigger)
 task.spawn(function()
     while true do
         local delay = S().RollDelay or 0.15
         task.wait(delay)
-        
+
         if S().AutoRoll_Enabled and Remotes.RollDice then
-            -- FIRE-AND-FORGET: task.spawn biar ga block
             task.spawn(function()
                 pcall(function()
                     Remotes.RollDice:InvokeServer()
@@ -187,6 +183,60 @@ task.spawn(function()
     end
 end)
 
+--========== AUTO COLLECT (TP ke tiap Hitbox) ==========
+task.spawn(function()
+    local Plots = workspace:WaitForChild("Plots")
+    local Claimed = Plots:WaitForChild("Claimed")
+
+    local function findAllHitboxes()
+        local list = {}
+        for _, plot in ipairs(Claimed:GetChildren()) do
+            if plot.Name ~= tostring(LP.UserId) then
+                local slots = plot:FindFirstChild("Slots")
+                if slots then
+                    for _, slot in ipairs(slots:GetChildren()) do
+                        local balance = slot:FindFirstChild("Balance")
+                        if balance then
+                            local hitbox = balance:FindFirstChild("Hitbox")
+                            if hitbox and hitbox:IsA("BasePart") then
+                                table.insert(list, hitbox)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return list
+    end
+
+    while true do
+        local cycleDelay = S().AutoCollect_Delay or 0.5
+        task.wait(cycleDelay)
+
+        if S().AutoCollect_Enabled then
+            local root = getRoot()
+            if root then
+                local hitboxes = findAllHitboxes()
+                if #hitboxes > 0 then
+                    local originalCFrame = root.CFrame
+
+                    for _, hitbox in ipairs(hitboxes) do
+                        if not S().AutoCollect_Enabled then break end
+                        pcall(function()
+                            root.CFrame = CFrame.new(hitbox.Position + Vector3.new(0, 2, 0))
+                        end)
+                        task.wait(S().AutoCollect_TPDelay or 0.08)
+                    end
+
+                    pcall(function()
+                        root.CFrame = originalCFrame
+                    end)
+                end
+            end
+        end
+    end
+end)
+
 --========== EXPOSE ==========
 Features.Remotes = Remotes
 Features.SellingZone = SellingZone
@@ -196,7 +246,6 @@ Features.getRoot = getRoot
 Features.getThreshold = calculateThreshold
 
 _G.VRILZ_Features = Features
--- print("[Features] Network found")  ← hapus
 
 -- Remote status → cuma warn kalau ada yang FAIL
 local failCount = 0
@@ -209,6 +258,3 @@ end
 if failCount == 0 then
     print("[Features] ✓ All remotes OK")
 end
-
--- print("[Features] RollMessage listener active")  ← hapus
--- print("[Features] Anime Dice features loaded v4")  ← hapus
