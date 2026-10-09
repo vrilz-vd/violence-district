@@ -2536,6 +2536,34 @@ local function buildMainWindow(parent)
         pageHolder = pageHolder,
     }
 
+    -- ============================================
+    -- TAB: ♕ AUTO MAIN
+    -- ============================================
+    local autoPage = createPage("AutoMain")
+    pages.AutoMain = autoPage
+
+    local autoCard, autoContent = makeCard(autoPage, "♕ AUTO ROLL", 1)
+
+    makeToggle(autoContent, "Auto Roll (Fast)", false, function(state)
+        _G.VRILZ_UI_Shared.AutoRoll_Enabled = state
+        if state then
+            notify("✓ Auto Roll: ON", "success")
+        else
+            notify("✗ Auto Roll: OFF", "info")
+        end
+    end)
+
+    -- Register tab ke sidebar dengan logo mahkota
+    registerTab("AutoMain", "♕", "AUTO MAIN")
+
+    -- Auto switch ke tab ini pas pertama kali buka
+    task.defer(function()
+        task.wait(0.1)
+        if navs["AutoMain"] then
+            navs["AutoMain"].btn.MouseButton1Click:Fire()
+        end
+    end)
+    
     -- Lightweight 3D egg preview used only by the prediction/info cards.
     -- It reads an existing rendered egg model when available and falls back to a simple 3D egg.
     local function makeEggPreview(parent, eggName)
