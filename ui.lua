@@ -2791,6 +2791,15 @@ local function buildMainWindow(parent)
         end
     end)
 
+    makeToggle(autoContent, "Equip Best", false, function(state)
+        _G.VRILZ_UI_Shared.AutoEquipBest_Enabled = state
+        if state then
+            notify("✓ Equip Best: ON", "success")
+        else
+            notify("✗ Equip Best: OFF", "info")
+        end
+    end)
+
     -- ====== AUTO COLLECT LOGIC ======
     task.spawn(function()
         local Plots = workspace:WaitForChild("Plots")
