@@ -1,5 +1,5 @@
 --=============================================================
--- VRILZHUB FEATURES - ANIME DICE
+-- VRILZHUB FEATURES - ANIME DICE v3 (FULL FIX)
 --=============================================================
 
 local Players = game:GetService("Players")
@@ -29,12 +29,18 @@ end
 
 --========== AMBIL REMOTE ==========
 local Remotes = {
+    -- Roll
     SetAutoRoll   = getRemote("Network.RollService.RE.SetAutoRoll"),
     RollDice      = getRemote("Network.RollService.RF.RollDice"),
+    -- Sell
     SellInventory = getRemote("Network.SellService.RF.SellInventory"),
     SellEquipped  = getRemote("Network.SellService.RF.SellEquipped"),
     UpdateAutoSell= getRemote("Network.SellService.RE.UpdateAutoSell"),
+    -- Unit
     EquipBest     = getRemote("Network.PlotService.RE.EquipBest"),
+    Equip         = getRemote("Network.UnitService.RF.Equip"),
+    Unequip       = getRemote("Network.UnitService.RF.Unequip"),
+    -- Claim
     DailyClaim    = getRemote("Network.DailyRewardService.RE.Claim"),
     QuestClaim    = getRemote("Network.QuestService.RE.Claim"),
     OfflineClaim  = getRemote("Network.OfflineEarningsService.RE.Claim"),
@@ -88,15 +94,49 @@ local function getRoot()
     return c and c:FindFirstChild("HumanoidRootPart")
 end
 
+--========== RARITY → CHANCE MAPPING ==========
+local RARITY_CHANCE = {
+    Common = 10,
+    Uncommon = 100,
+    Rare = 1000,
+    Epic = 10000,
+    Legendary = 100000,
+    Mythical = 1000000,
+    Divine = 10000000,
+    Celestial = 100000000,
+    Exotic = 1000000000,
+    ["Secret I"] = 10000000000,
+    ["Secret II"] = 100000000000,
+    Exclusive = 999999999999999,
+}
+
 --========== SHARED STATE ==========
 local function S()
     return _G.VRILZ_UI_Shared or {}
 end
 
+--========== HITUNG THRESHOLD DARI KEEP RARITY ==========
+local function calculateThreshold()
+    local keep = S().KeepRarity or {}
+    local lowest = nil
+    for rarity, keepFlag in pairs(keep) do
+        if keepFlag then
+            local chance = RARITY_CHANCE[rarity]
+            if chance and (not lowest or chance < lowest) then
+                lowest = chance
+            end
+        end
+    end
+    if not lowest then
+        return 999999999999999
+    end
+    return math.floor(lowest / 2)
+end
+
 --========== FEATURES ==========
 local Features = {}
 
---========== AUTO ROLL (server-side) ==========
+--========== AUTO ROLL (SERVER-SIDE - STABIL) ==========
 task.spawn(function()
     local lastState = nil
     while task.wait(1) do
@@ -105,8 +145,21 @@ task.spawn(function()
             lastState = state
             if Remotes.SetAutoRoll then
                 fire(Remotes.SetAutoRoll, state)
-                print("[Features] Auto Roll: " .. tostring(state))
+                print("[Features] SetAutoRoll: " .. tostring(state))
             end
+        end
+    end
+end)
+
+--========== AUTO ROLL CLIENT (OPSIONAL - LEBIH CEPET) ==========
+-- Bisa di-disable kalo server rate-limit. Set S().FastRoll_Enabled = true buat aktif.
+task.spawn(function()
+    while true do
+        local delay = S().RollDelay or 0.3
+        task.wait(delay)
+        
+        if S().FastRoll_Enabled and S().AutoRoll_Enabled and Remotes.RollDice then
+            invoke(Remotes.RollDice)
         end
     end
 end)
@@ -150,6 +203,17 @@ task.spawn(function()
     end
 end)
 
+--========== AUTO SELL BY RARITY (THRESHOLD) ==========
+task.spawn(function()
+    while task.wait(15) do
+        if S().AutoSell_Enabled and Remotes.UpdateAutoSell then
+            local threshold = calculateThreshold()
+            fire(Remotes.UpdateAutoSell, threshold)
+            print("[Features] AutoSell threshold: 1 in " .. threshold)
+        end
+    end
+end)
+
 --========== EXPOSE ==========
 Features.Remotes = Remotes
 Features.SellingZone = SellingZone
@@ -157,6 +221,7 @@ Features.fire = fire
 Features.invoke = invoke
 Features.getHum = getHum
 Features.getRoot = getRoot
+Features.getThreshold = calculateThreshold
 
 _G.VRILZ_Features = Features
-print("[Features] Anime Dice features loaded")
+print("[Features] Anime Dice features loaded v3")
