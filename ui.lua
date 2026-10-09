@@ -2849,7 +2849,7 @@ local function buildMainWindow(parent)
         end
     end)
 
-        -- Register tab AutoMain
+            -- Register tab AutoMain
     registerTab("AutoMain", "CROWN", "AUTO MAIN")
 
     -- ============================================
@@ -2858,6 +2858,7 @@ local function buildMainWindow(parent)
     local settingsPage = createPage("Settings")
     pages.Settings = settingsPage
 
+    -- ====== CARD 1: PERFORMANCE ======
     local perfCard, perfContent = makeCard(settingsPage, "⚙ PERFORMANCE", 1)
 
     makeToggle(perfContent, "FPS Boost (High FPS)", false, function(state)
@@ -2896,6 +2897,65 @@ local function buildMainWindow(parent)
         end
     end)
 
+    makeToggle(perfContent, "Anti AFK", true, function(state)
+        _G.VRILZ_UI_Shared.AntiAFK_Enabled = state
+        if state then
+            notify("✓ Anti AFK: ON", "success")
+        else
+            notify("✗ Anti AFK: OFF", "info")
+        end
+    end)
+
+    -- ====== CARD 2: THEME ======
+    local themeCard, themeContent = makeCard(settingsPage, "🎨 THEME", 2)
+
+    -- Info label
+    local themeInfoLbl = Instance.new("TextLabel")
+    themeInfoLbl.Size = UDim2.new(1, 0, 0, 18)
+    themeInfoLbl.BackgroundTransparency = 1
+    themeInfoLbl.Text = "Ganti warna UI. Auto-reload window."
+    themeInfoLbl.TextColor3 = C.Muted
+    themeInfoLbl.Font = Enum.Font.GothamSemibold
+    themeInfoLbl.TextSize = CFG.FONT_MUTED
+    themeInfoLbl.TextXAlignment = Enum.TextXAlignment.Left
+    themeInfoLbl.LayoutOrder = 1
+    themeInfoLbl.ZIndex = 3
+    themeInfoLbl.Parent = themeContent
+    registerTheme(themeInfoLbl, "Muted", "TextColor3")
+
+    -- Dropdown theme (pake makeDropdownGlobal)
+    local themeList = {"Brutal", "Ice", "Fire", "Pink", "Green", "Blue", "Mustard", "Olive"}
+    local currentThemeName = _G.VRILZ_CurrentTheme or "Brutal"
+
+    local themeDropdown = makeDropdownGlobal(themeContent, themeList, currentThemeName, function(selected)
+        if selected == currentThemeName then return end
+        currentThemeName = selected
+
+        -- Save ke _G
+        _G.VRILZ_CurrentTheme = selected
+
+        -- Save ke file (biar persistent)
+        if writefile then
+            pcall(function()
+                writefile("vrilz_theme.txt", selected)
+            end)
+        end
+
+        notify("🎨 Ganti theme: " .. selected, "info")
+
+        -- Rebuild UI dengan theme baru
+        task.wait(0.2)
+        if main then main:Destroy() end
+        task.wait(0.1)
+
+        -- Set global theme
+        C = Themes[selected]
+
+        -- Rebuild
+        buildMainWindow(screenGui)
+    end)
+    themeDropdown.LayoutOrder = 2
+
     -- Register tab Settings
     registerTab("Settings", "⚙", "SETTINGS")
 
@@ -2906,6 +2966,7 @@ local function buildMainWindow(parent)
             navs["AutoMain"].btn.MouseButton1Click:Fire()
         end
     end)
+
     -- Auto switch ke tab ini pas pertama kali buka
     task.defer(function()
         task.wait(0.1)
@@ -3903,6 +3964,23 @@ function UI.Init(sharedState)
     Shared = sharedState
     Shared.Notify = notify
     _G.VRILZ_UI_Shared = Shared   -- ← TAMBAH INI (biar bisa debug)
+
+    -- Load saved theme
+    task.spawn(function()
+        if readfile and isfile then
+            local ok, exists = pcall(isfile, "vrilz_theme.txt")
+            if ok and exists then
+                local okRead, content = pcall(readfile, "vrilz_theme.txt")
+                if okRead and content then
+                    content = content:gsub("^%s+", ""):gsub("%s+$", "")
+                    if content ~= "" and Themes[content] then
+                        C = Themes[content]
+                        _G.VRILZ_CurrentTheme = content
+                    end
+                end
+            end
+        end
+    end)
 
     Shared.ESP_Eggs_Enabled = false
     Shared.ESP_EggName_Enabled = false
