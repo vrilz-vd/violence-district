@@ -2709,13 +2709,14 @@ local function buildMainWindow(parent)
         pageHolder = pageHolder,
     }
 
-    -- ============================================
+       -- ============================================
     -- TAB: ♕ AUTO MAIN
     -- ============================================
     local autoPage = createPage("AutoMain")
     pages.AutoMain = autoPage
 
-    local autoCard, autoContent = makeCard(autoPage, "♕ AUTO ROLL", 1)
+    -- ====== SATU CARD: AUTO ROLL + AUTO COLLECT ======
+    local autoCard, autoContent = makeCard(autoPage, "♕ AUTO MAIN", 1)
 
     makeToggle(autoContent, "Auto Roll (Fast)", false, function(state)
         _G.VRILZ_UI_Shared.AutoRoll_Enabled = state
@@ -2726,9 +2727,75 @@ local function buildMainWindow(parent)
         end
     end)
 
+    makeToggle(autoContent, "Auto Collect (All Hitboxes)", false, function(state)
+        _G.VRILZ_UI_Shared.AutoCollect_Enabled = state
+        if state then
+            notify("✓ Auto Collect: ON", "success")
+        else
+            notify("✗ Auto Collect: OFF", "info")
+        end
+    end)
+
+    -- ====== AUTO COLLECT LOGIC ======
+    task.spawn(function()
+        local Plots = workspace:WaitForChild("Plots")
+        local Claimed = Plots:WaitForChild("Claimed")
+        local LP = Players.LocalPlayer
+
+        local function getRoot()
+            local char = LP.Character
+            return char and char:FindFirstChild("HumanoidRootPart")
+        end
+
+        local function findAllHitboxes()
+            local list = {}
+            for _, plot in ipairs(Claimed:GetChildren()) do
+                if plot.Name ~= tostring(LP.UserId) then
+                    local slots = plot:FindFirstChild("Slots")
+                    if slots then
+                        for _, slot in ipairs(slots:GetChildren()) do
+                            local balance = slot:FindFirstChild("Balance")
+                            if balance then
+                                local hitbox = balance:FindFirstChild("Hitbox")
+                                if hitbox and hitbox:IsA("BasePart") then
+                                    table.insert(list, hitbox)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            return list
+        end
+
+        while task.wait(0.5) do
+            if _G.VRILZ_UI_Shared and _G.VRILZ_UI_Shared.AutoCollect_Enabled then
+                local root = getRoot()
+                if root then
+                    local hitboxes = findAllHitboxes()
+                    if #hitboxes > 0 then
+                        local originalCFrame = root.CFrame
+                        
+                        -- TP ke tiap hitbox satu-satu
+                        for _, hitbox in ipairs(hitboxes) do
+                            pcall(function()
+                                root.CFrame = CFrame.new(hitbox.Position + Vector3.new(0, 2, 0))
+                            end)
+                            task.wait(0.08)
+                        end
+                        
+                        -- Balik ke posisi awal
+                        pcall(function()
+                            root.CFrame = originalCFrame
+                        end)
+                    end
+                end
+            end
+        end
+    end)
+
     -- Register tab ke sidebar dengan logo mahkota
     registerTab("AutoMain", "CROWN", "AUTO MAIN")
-
     -- Auto switch ke tab ini pas pertama kali buka
     task.defer(function()
         task.wait(0.1)
