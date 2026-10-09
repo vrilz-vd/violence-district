@@ -2625,9 +2625,6 @@ local function buildMainWindow(parent)
             )
         end
     end)
-
-    return main
-end
     -- ============================================================
     -- BUILD LIVE CHAT WINDOW (TERPISAH)
     -- ============================================================
